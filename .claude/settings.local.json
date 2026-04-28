@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source /Users/solomonsmith/Projects/CodePath/ai110-module2show-pawpalplus/venv/bin/activate)",
+      "Bash(echo \"Activated: $VIRTUAL_ENV\")"
+    ]
+  }
+}
