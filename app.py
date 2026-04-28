@@ -1,331 +1,285 @@
-"""SOC Triage AI: Streamlit UI for analyst-facing alert triage demo.
-
-Run with: streamlit run app.py
-"""
+"""SOC Triage AI — Streamlit interface."""
 import json
 import streamlit as st
 from triage import SOCTriage
 
-
-# Page config
 st.set_page_config(
     page_title="SOC Triage AI",
-    page_icon="🛡️",
+    page_icon=":material/shield:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-
-# Custom CSS for a security-tool aesthetic
+# ---------------------------------------------------------------------------
+# CSS — dark SOC dashboard aesthetic, no decorative nonsense
+# ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #f1f5f9;
-        margin-bottom: 0;
+    #MainMenu, footer, header {visibility: hidden;}
+    .block-container {padding-top: 1.5rem; padding-bottom: 1rem;}
+
+    /* typography */
+    .title {
+        font-size: 1.5rem; font-weight: 700; color: #e2e8f0;
+        letter-spacing: -0.01em; margin-bottom: 0.1rem;
     }
-    .sub-header {
-        font-size: 1rem;
-        color: #94a3b8;
-        font-style: italic;
-        margin-top: 0;
+    .subtitle {
+        font-size: 0.82rem; color: #64748b; margin-bottom: 1.2rem;
     }
-    .severity-critical {
-        background-color: #7f1d1d; color: white; padding: 0.4rem 1rem;
-        border-radius: 0.25rem; font-weight: 700; display: inline-block;
-        font-size: 1.1rem; letter-spacing: 1px;
+
+    /* severity chips */
+    .sev {
+        padding: 0.25rem 0.65rem; border-radius: 3px; font-weight: 700;
+        font-size: 0.78rem; letter-spacing: 0.5px; display: inline-block;
+        text-transform: uppercase;
     }
-    .severity-high {
-        background-color: #c2410c; color: white; padding: 0.4rem 1rem;
-        border-radius: 0.25rem; font-weight: 700; display: inline-block;
-        font-size: 1.1rem; letter-spacing: 1px;
+    .sev-critical    {background:#991b1b; color:#fecaca;}
+    .sev-high        {background:#9a3412; color:#fed7aa;}
+    .sev-medium      {background:#854d0e; color:#fef08a;}
+    .sev-low         {background:#166534; color:#bbf7d0;}
+    .sev-informational {background:#334155; color:#cbd5e1;}
+
+    /* metric cards */
+    .m-card {
+        background: #0f172a; border: 1px solid #1e293b; border-radius: 6px;
+        padding: 0.65rem 0.85rem;
     }
-    .severity-medium {
-        background-color: #ca8a04; color: white; padding: 0.4rem 1rem;
-        border-radius: 0.25rem; font-weight: 700; display: inline-block;
-        font-size: 1.1rem; letter-spacing: 1px;
+    .m-card .lbl {
+        font-size: 0.65rem; color: #475569; text-transform: uppercase;
+        letter-spacing: 0.8px; margin-bottom: 0.3rem;
     }
-    .severity-low {
-        background-color: #166534; color: white; padding: 0.4rem 1rem;
-        border-radius: 0.25rem; font-weight: 700; display: inline-block;
-        font-size: 1.1rem; letter-spacing: 1px;
+    .m-card .val {
+        font-size: 1.05rem; font-weight: 600; color: #e2e8f0;
     }
-    .severity-informational {
-        background-color: #475569; color: white; padding: 0.4rem 1rem;
-        border-radius: 0.25rem; font-weight: 700; display: inline-block;
-        font-size: 1.1rem; letter-spacing: 1px;
+
+    /* technique pills */
+    .tt {
+        background: #172554; color: #93c5fd; padding: 0.18rem 0.5rem;
+        border-radius: 3px; font-family: 'SF Mono','Fira Code',monospace;
+        font-size: 0.8rem; font-weight: 500; margin: 0 0.3rem 0.3rem 0;
+        display: inline-block;
     }
-    .metric-label {
-        font-size: 0.85rem; color: #94a3b8; text-transform: uppercase;
-        letter-spacing: 1px; margin-bottom: 0.25rem;
+    /* source pills */
+    .st {
+        background: #0f172a; border: 1px solid #1e293b; color: #94a3b8;
+        padding: 0.15rem 0.4rem; border-radius: 3px; font-family: monospace;
+        font-size: 0.75rem; margin: 0 0.25rem 0.25rem 0; display: inline-block;
     }
-    .technique-badge {
-        background-color: #1e3a8a; color: #dbeafe; padding: 0.25rem 0.6rem;
-        border-radius: 0.25rem; font-family: monospace; font-weight: 600;
-        margin-right: 0.4rem; display: inline-block; font-size: 0.9rem;
+
+    /* reasoning panel */
+    .reasoning {
+        background: #0f172a; border-left: 3px solid #2563eb; color: #cbd5e1;
+        padding: 0.85rem 1rem; border-radius: 0 4px 4px 0; font-size: 0.88rem;
+        line-height: 1.55;
     }
-    .source-badge {
-        background-color: #1e293b; color: #cbd5e1; padding: 0.2rem 0.5rem;
-        border-radius: 0.25rem; font-family: monospace; font-size: 0.85rem;
-        margin-right: 0.4rem; display: inline-block;
+
+    /* section label */
+    .sec {
+        font-size: 0.68rem; font-weight: 600; color: #475569;
+        text-transform: uppercase; letter-spacing: 0.8px;
+        margin: 1rem 0 0.4rem 0;
     }
+
+    /* escalation */
+    .esc-yes {color: #ef4444; font-weight: 700; font-size: 1.05rem;}
+    .esc-no  {color: #475569; font-weight: 500; font-size: 1.05rem;}
+
+    /* empty state */
+    .empty {
+        background: #0f172a; border: 1px dashed #1e293b; color: #334155;
+        padding: 2.5rem; border-radius: 6px; text-align: center;
+        font-size: 0.85rem;
+    }
+
+    /* sidebar */
+    .sb-title {font-size: 1rem; font-weight: 700; color: #e2e8f0;}
+    .sb-meta {font-size: 0.72rem; color: #475569; line-height: 1.7;}
+
+    /* textarea */
     .stTextArea textarea {
-        font-family: 'Monaco', 'Menlo', monospace;
-        font-size: 0.95rem;
+        font-family: 'SF Mono','Fira Code','Cascadia Code',monospace;
+        font-size: 0.88rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Initialize triage system once and cache it
 @st.cache_resource
-def get_triage_system():
-    """Load corpus and embeddings once per session."""
+def load_triage():
     return SOCTriage()
 
 
-# Sample alerts for one-click demo
-SAMPLE_ALERTS = {
-    "Active ransomware (CRITICAL)": (
+SAMPLES = {
+    "Active ransomware": (
         "Multiple file servers showing thousands of file modifications per minute. "
         "Files renamed with .lockbit extension. README.txt ransom notes appearing "
         "in every directory. Volume Shadow Copies deleted via vssadmin 30 minutes ago."
     ),
-    "LSASS credential dumping (CRITICAL)": (
+    "LSASS credential dump": (
         "EDR detected suspicious access to LSASS process memory by rundll32.exe "
         "with comsvcs.dll on workstation WKSTN-042. User account is jsmith. "
         "Process tree: cmd.exe -> rundll32.exe."
     ),
-    "Phishing with credential entry (HIGH)": (
+    "Phishing + credential entry": (
         "User reported email from ceo@anthrop1c.com (note typo) requesting "
         "urgent wire transfer to new vendor. User clicked link and entered "
         "credentials before reporting. Email contained urgency language."
     ),
-    "SSH brute force from Tor (HIGH)": (
+    "SSH brute force (Tor exit)": (
         "5000 failed SSH authentication attempts in last 10 minutes against "
         "host srv-bastion-01 from source IP 185.220.101.45 (known Tor exit). "
         "No successful authentications observed yet."
     ),
-    "Insider threat (HIGH)": (
+    "Insider data exfiltration": (
         "Employee jdoe (resignation notice given last week) downloaded 15GB of "
         "customer data from CRM in last 24 hours. Login from new device "
         "fingerprint. Email forwarding rule created to personal Gmail yesterday."
     ),
-    "Out-of-scope gibberish (GUARDRAIL)": (
+    "Gibberish (guardrail test)": (
         "asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet"
     ),
 }
 
 
-def render_severity_badge(severity: str) -> str:
-    return f'<span class="severity-{severity}">{severity.upper()}</span>'
+def sev_badge(s):
+    return f'<span class="sev sev-{s}">{s}</span>'
+
+def tech_pills(ts):
+    if not ts:
+        return '<span style="color:#475569;font-size:0.82rem;">None identified</span>'
+    return "".join(f'<span class="tt">{t}</span>' for t in ts)
+
+def src_pills(ss):
+    if not ss:
+        return '<span style="color:#475569;font-size:0.82rem;">N/A</span>'
+    return "".join(f'<span class="st">{s}</span>' for s in ss)
 
 
-def render_techniques(techniques: list) -> str:
-    if not techniques:
-        return '<span style="color: #64748b; font-style: italic;">none identified</span>'
-    return "".join(f'<span class="technique-badge">{t}</span>' for t in techniques)
-
-
-def render_sources(sources: list) -> str:
-    if not sources:
-        return '<span style="color: #64748b; font-style: italic;">none</span>'
-    return "".join(f'<span class="source-badge">{s}</span>' for s in sources)
-
-
-# ============================================================
-# SESSION STATE INIT
-# ============================================================
-# Use a single canonical key for the textarea content.
-# Sample alert buttons mutate this BEFORE the textarea is rendered.
-
+# ---------------------------------------------------------------------------
+# Session state
+# ---------------------------------------------------------------------------
 if "alert_input" not in st.session_state:
     st.session_state.alert_input = ""
 
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🛡️ SOC Triage AI")
-    st.markdown(
-        "RAG-grounded alert triage with structured output and reliability evaluation."
-    )
-
+    st.markdown('<div class="sb-title">SOC Triage AI</div>', unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("### Sample Alerts")
-    st.markdown(
-        "<small>Click to load a representative SOC alert into the input field.</small>",
-        unsafe_allow_html=True,
-    )
-
-    # CRITICAL: writing to st.session_state.alert_input here is allowed
-    # because we haven't rendered the textarea widget yet. After the textarea
-    # renders, Streamlit owns the key and we can't modify it.
-    for label, alert_text in SAMPLE_ALERTS.items():
-        if st.button(label, use_container_width=True, key=f"btn_{label}"):
-            st.session_state.alert_input = alert_text
+    st.markdown('<div class="sec">Sample alerts</div>', unsafe_allow_html=True)
+    for label, text in SAMPLES.items():
+        if st.button(label, use_container_width=True, key=f"s_{label}"):
+            st.session_state.alert_input = text
             st.rerun()
 
     st.divider()
-
-    st.markdown("### System")
     st.markdown(
-        "<small>"
-        "<b>Model:</b> Claude Sonnet 4.5<br>"
-        "<b>Embeddings:</b> all-MiniLM-L6-v2<br>"
-        "<b>Corpus:</b> 11 docs · 109 chunks<br>"
-        "<b>Threshold:</b> retrieval similarity ≥ 0.20"
-        "</small>",
+        '<div class="sb-meta">'
+        "Model &nbsp;Claude Sonnet 4.5<br>"
+        "Embeddings &nbsp;all-MiniLM-L6-v2<br>"
+        "Corpus &nbsp;11 docs / 109 chunks<br>"
+        "Min similarity &nbsp;0.20"
+        "</div>",
         unsafe_allow_html=True,
     )
 
-    st.divider()
-
-    st.markdown(
-        "<small>"
-        "Built as the AI110 Final Project for CodePath. "
-        "Extends the Mood Machine sentiment classifier "
-        "into a security domain with RAG, MITRE mapping, and reliability harness."
-        "</small>",
-        unsafe_allow_html=True,
-    )
-
-
-# ============================================================
-# MAIN
-# ============================================================
-
-st.markdown('<p class="main-header">🛡️ SOC Triage AI</p>', unsafe_allow_html=True)
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+st.markdown('<div class="title">SOC Triage AI</div>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="sub-header">Tier 1 alert triage assistant · grounded in MITRE ATT&CK threat intelligence</p>',
+    '<div class="subtitle">Tier-1 alert triage &middot; MITRE ATT&CK grounded</div>',
     unsafe_allow_html=True,
 )
 
-st.divider()
-
-# Input - bound to session state via key
 alert_text = st.text_area(
-    "Security Alert",
-    height=140,
-    placeholder=(
-        "Paste an alert from your SIEM, EDR, or SOAR platform.\n\n"
-        "Example: 'EDR detected suspicious access to LSASS process memory by rundll32.exe...'"
-    ),
-    help="The system will retrieve relevant threat intelligence and produce a structured triage report.",
+    "Alert input",
+    height=120,
+    placeholder="Paste a raw alert from your SIEM, EDR, or SOAR platform...",
+    label_visibility="collapsed",
     key="alert_input",
 )
 
-col_btn, col_status = st.columns([1, 4])
-
+col_btn, _ = st.columns([1, 5])
 with col_btn:
-    triage_clicked = st.button(
-        "🔍 Triage Alert",
-        type="primary",
-        use_container_width=True,
+    run = st.button(
+        "Run Triage", type="primary", use_container_width=True,
         disabled=not alert_text.strip(),
     )
 
-with col_status:
-    if not alert_text.strip():
-        st.markdown(
-            "<small style='color: #94a3b8;'>Enter an alert above or select a sample from the sidebar.</small>",
-            unsafe_allow_html=True,
-        )
+with st.spinner("Indexing corpus..."):
+    engine = load_triage()
 
-# Pre-load system on first render so demo feels snappy
-with st.spinner("Initializing system (one-time corpus indexing)..."):
-    triage = get_triage_system()
-
-
-# ============================================================
-# TRIAGE EXECUTION + DISPLAY
-# ============================================================
-
-if triage_clicked and alert_text.strip():
-    with st.spinner("Retrieving threat intelligence and analyzing alert..."):
-        result = triage.triage(alert_text)
+# ---------------------------------------------------------------------------
+# Report
+# ---------------------------------------------------------------------------
+if run and alert_text.strip():
+    with st.spinner("Analyzing..."):
+        r = engine.triage(alert_text)
 
     st.divider()
-    st.markdown("### 📋 Triage Report")
 
-    # Top metrics row
-    m1, m2, m3, m4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4)
 
-    with m1:
-        st.markdown('<div class="metric-label">Severity</div>', unsafe_allow_html=True)
-        st.markdown(render_severity_badge(result["severity"]), unsafe_allow_html=True)
-
-    with m2:
-        st.markdown('<div class="metric-label">Confidence</div>', unsafe_allow_html=True)
+    with c1:
         st.markdown(
-            f'<div style="font-size: 1.3rem; font-weight: 600;">{result["confidence"].upper()}</div>',
+            f'<div class="m-card"><div class="lbl">Severity</div>'
+            f'{sev_badge(r["severity"])}</div>',
+            unsafe_allow_html=True,
+        )
+    with c2:
+        esc = r["escalate"]
+        cls = "esc-yes" if esc else "esc-no"
+        txt = "YES — escalate" if esc else "NO"
+        st.markdown(
+            f'<div class="m-card"><div class="lbl">Escalate</div>'
+            f'<div class="{cls}">{txt}</div></div>',
+            unsafe_allow_html=True,
+        )
+    with c3:
+        st.markdown(
+            f'<div class="m-card"><div class="lbl">Confidence</div>'
+            f'<div class="val">{r["confidence"].upper()}</div></div>',
+            unsafe_allow_html=True,
+        )
+    with c4:
+        score = r.get("retrieval_score", 0)
+        st.markdown(
+            f'<div class="m-card"><div class="lbl">Retrieval</div>'
+            f'<div class="val">{score:.3f}</div></div>',
             unsafe_allow_html=True,
         )
 
-    with m3:
-        st.markdown('<div class="metric-label">Escalate</div>', unsafe_allow_html=True)
-        escalate_color = "#dc2626" if result["escalate"] else "#475569"
-        escalate_text = "YES" if result["escalate"] else "NO"
+    st.markdown('<div class="sec">Summary</div>', unsafe_allow_html=True)
+    st.info(r["summary"])
+
+    left, right = st.columns([3, 2])
+
+    with left:
+        st.markdown('<div class="sec">Recommended actions</div>', unsafe_allow_html=True)
+        for i, a in enumerate(r["recommended_actions"], 1):
+            st.markdown(f"{i}. {a}")
+
+        st.markdown('<div class="sec">Reasoning</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div style="font-size: 1.3rem; font-weight: 700; color: {escalate_color};">{escalate_text}</div>',
+            f'<div class="reasoning">{r["reasoning"]}</div>',
             unsafe_allow_html=True,
         )
 
-    with m4:
-        st.markdown('<div class="metric-label">Retrieval Score</div>', unsafe_allow_html=True)
-        score = result.get("retrieval_score", 0)
-        st.markdown(
-            f'<div style="font-size: 1.3rem; font-weight: 600;">{score:.3f}</div>',
-            unsafe_allow_html=True,
-        )
+    with right:
+        st.markdown('<div class="sec">MITRE ATT&CK</div>', unsafe_allow_html=True)
+        st.markdown(tech_pills(r["mitre_techniques"]), unsafe_allow_html=True)
 
-    st.markdown("")
+        st.markdown('<div class="sec">Sources</div>', unsafe_allow_html=True)
+        st.markdown(src_pills(r.get("sources", [])), unsafe_allow_html=True)
 
-    # Summary
-    st.markdown("**Summary**")
-    st.info(result["summary"])
+    with st.expander("Raw JSON"):
+        st.code(json.dumps(r, indent=2), language="json")
 
-    # Two-column body
-    col_left, col_right = st.columns([3, 2])
-
-    with col_left:
-        st.markdown("**Recommended Actions**")
-        for i, action in enumerate(result["recommended_actions"], 1):
-            st.markdown(f"{i}. {action}")
-
-        st.markdown("")
-        st.markdown("**Reasoning**")
-        st.markdown(
-            f'<div style="background-color: #1e293b; color: #cbd5e1; padding: 1rem; '
-            f'border-left: 3px solid #3b82f6; border-radius: 0.25rem; font-size: 0.95rem;">'
-            f'{result["reasoning"]}</div>',
-            unsafe_allow_html=True,
-        )
-
-    with col_right:
-        st.markdown("**MITRE ATT&CK Techniques**")
-        st.markdown(render_techniques(result["mitre_techniques"]), unsafe_allow_html=True)
-
-        st.markdown("")
-        st.markdown("**Threat Intel Sources**")
-        st.markdown(render_sources(result.get("sources", [])), unsafe_allow_html=True)
-
-    # Raw JSON (collapsible)
-    with st.expander("🔧 Raw JSON Output (for SIEM/SOAR integration)"):
-        st.code(json.dumps(result, indent=2), language="json")
-
-elif not triage_clicked:
-    st.markdown("")
+elif not run:
     st.markdown(
-        '<div style="background-color: #1e293b; color: #94a3b8; padding: 2rem; '
-        'border-radius: 0.5rem; text-align: center; font-style: italic;">'
-        'Submit an alert to see the triage report.<br>'
-        'The system will retrieve relevant threat intelligence, ground its analysis in '
-        'MITRE ATT&CK, and produce a structured report ready for analyst review.'
-        '</div>',
+        '<div class="empty">Paste an alert or pick a sample from the sidebar.</div>',
         unsafe_allow_html=True,
     )
