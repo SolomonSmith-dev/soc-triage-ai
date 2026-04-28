@@ -35,13 +35,23 @@ cp .env.example .env
 
 ## Usage
 
-Triage a single alert:
+### Streamlit UI (primary)
 
 ```bash
+source venv/bin/activate
+streamlit run app.py --server.fileWatcherType=none
+```
+
+The UI opens at `http://localhost:8501`. Use the sidebar sample alert buttons to load representative scenarios, or paste your own alert text. Click **Triage Alert** to generate a structured report with severity badge, MITRE techniques, recommended actions, reasoning, source attribution, and collapsible raw JSON.
+
+### CLI
+
+```bash
+source venv/bin/activate
 python triage.py "PowerShell encoded command spawned by outlook.exe"
 ```
 
-Run the reliability harness:
+### Reliability harness
 
 ```bash
 python -m tests.test_harness
@@ -123,6 +133,12 @@ Each test case validates four criteria: severity classification falls within exp
 
 The single failure was on the phishing test, where the system correctly classified severity as critical and recommended escalation, but did not populate the MITRE technique field. This is documented in `model_card.md` along with the iteration history that produced this version.
 
+## Limitations & Known Issues
+
+- **Reliability harness: 6/7 pass rate.** The T1 phishing test occasionally returns empty MITRE techniques despite correct severity classification and escalation decision. This is a known LLM output variability issue documented in `model_card.md`.
+- **Streamlit file watcher noise.** The `sentence-transformers` library triggers `ModuleNotFoundError` warnings for unused image-processing modules during Streamlit's file watcher scan. Workaround: `--server.fileWatcherType=none`. This does not affect functionality.
+- **Static corpus.** The current threat intelligence base is 11 markdown documents (109 chunks). For production use, this would be replaced with live MITRE ATT&CK feeds and CVE database integrations.
+
 ## Reliability and Evaluation
 
 The system implements four reliability mechanisms:
@@ -144,6 +160,7 @@ See `model_card.md` for full reflection on limitations, biases, misuse risks, an
 
 ```
 soc-triage-ai/
+├── app.py                     # Streamlit analyst-facing UI
 ├── triage.py                  # Main entry point and pipeline
 ├── rag/
 │   ├── __init__.py
