@@ -1,8 +1,11 @@
 """SOC Triage AI: RAG-grounded structured triage of security alerts.
 
-Extends the Mood Machine Module 3 pipeline by replacing sentiment classification
-with security alert severity classification, adding retrieval grounding, and
-producing structured JSON output suitable for SOC tooling integration.
+Conceptually inspired by The Mood Machine (CodePath AI110 Module 3), which
+classified text into sentiment categories using prompt-engineered LLM calls.
+SOC Triage AI applies the same core pattern (LLM-based categorical classification
+with structured output) to a higher-stakes domain. The implementation is largely
+new: retrieval-augmented grounding, MITRE ATT&CK mapping, schema validation, and
+a reliability harness are additions specific to the security domain.
 """
 import json
 import logging
@@ -30,7 +33,13 @@ MAX_TOKENS = 1024
 
 TRIAGE_PROMPT = """You are a Tier 1 SOC analyst assistant performing alert triage.
 
-Use ONLY the threat intelligence context below. Do not invent CVE numbers, MITRE technique IDs, or threat actor names. If context is insufficient for a specific field, use null or empty list.
+Use ONLY the threat intelligence context below. Do not invent CVE numbers, MITRE technique IDs, or threat actor names.
+
+REQUIRED BEHAVIOR FOR MITRE TECHNIQUES:
+- For any alert with severity higher than "informational", you MUST identify at least one MITRE ATT&CK technique from the threat intelligence context.
+- Format technique IDs as "T1234" or "T1234.001" (with sub-technique when applicable).
+- If multiple techniques apply, list all that are clearly supported by the context.
+- Only return an empty mitre_techniques list when severity is "informational".
 
 If the alert appears benign or out of scope (gibberish, unrelated content), set severity to "informational" and escalate to false.
 
@@ -108,7 +117,7 @@ class SOCTriage:
         except json.JSONDecodeError as e:
             logger.error(f"JSON parse failed: {e}. Raw: {raw[:300]}")
             return self._guardrail_response(
-                f"LLM produced malformed JSON",
+                "LLM produced malformed JSON",
                 retrieval_score=avg_score,
                 sources=sources,
             )
