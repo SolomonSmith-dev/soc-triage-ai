@@ -1,67 +1,163 @@
-# The Mood Machine
+# SOC Triage AI
 
-The Mood Machine is a simple text classifier that begins with a rule based approach and can optionally be extended with a small machine learning model. It tries to guess whether a short piece of text sounds **positive**, **negative**, **neutral**, or even **mixed** based on patterns in your data.
+**RAG-grounded security alert triage with structured JSON output, MITRE ATT&CK mapping, and reliability evaluation.**
 
-This lab gives you hands on experience with how basic systems work, where they break, and how different modeling choices affect fairness and accuracy. You will edit code, add data, run experiments, and write a short model card reflection.
+A SOC analyst assistant that ingests raw security alerts, retrieves relevant threat intelligence, and produces structured triage reports including severity classification, MITRE technique mapping, recommended actions, and escalation decisions.
 
----
+## Base Project
 
-## Repo Structure
+This project is conceptually derived from **The Mood Machine** (CodePath AI110 Module 3), which classified text into sentiment categories using prompt-engineered LLM calls. SOC Triage AI applies the same core pattern, LLM-based categorical classification with structured output, to a higher-stakes domain. The implementation is largely new: retrieval-augmented grounding, MITRE ATT&CK mapping, schema validation, and a reliability harness are additions specific to the security domain.
 
-```plaintext
-├── dataset.py         # Starter word lists and example posts (you will expand these)
-├── mood_analyzer.py   # Rule based classifier with TODOs to improve
-├── main.py            # Runs the rule based model and interactive demo
-├── ml_experiments.py  # (New) A tiny ML classifier using scikit-learn
-├── model_card.md      # Template to fill out after experimenting
-└── requirements.txt   # Dependencies for optional ML exploration
-```
+The lesson carried forward: prompt engineering and structured output are general patterns that transfer across domains, but the system architecture around them determines whether the project is portfolio-worthy.
 
----
+## Architecture
 
-## Getting Started
+![System Architecture](assets/architecture.png)
 
-1. Open this folder in VS Code.
-2. Make sure your Python environment is active.
-3. Install dependencies:
+The system processes alerts through five stages:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+1. **Embedding-based retrieval**: incoming alert text is embedded with sentence-transformers and matched against an indexed threat intelligence corpus using cosine similarity.
+2. **Guardrail check**: if no chunks meet the minimum similarity threshold, the system returns a hardcoded refusal that recommends manual review.
+3. **Grounded prompting**: top-4 retrieved chunks are injected into a structured prompt that constrains Claude Sonnet 4.5 to use only the provided context.
+4. **Schema validation**: LLM output is parsed and validated against a strict JSON schema. Invalid output triggers the guardrail response.
+5. **Reporting**: validated triage includes source attribution, retrieval similarity score, severity, confidence, MITRE techniques, recommended actions, and escalation decision.
 
-4. Run the rule-based starter:
-
-    ```bash
-    python main.py
-    ```
-
-If pieces of the analyzer are not implemented yet, you will see helpful errors that guide you to the TODOs.
-
-To try the ML model later, run:
+## Setup
 
 ```bash
-python ml_experiments.py
+git clone https://github.com/SolomonSmith-dev/soc-triage-ai.git
+cd soc-triage-ai
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env: set ANTHROPIC_API_KEY
 ```
 
----
+## Usage
 
-## What You Will Do
+Triage a single alert:
 
-During this lab you will:
+```bash
+python triage.py "PowerShell encoded command spawned by outlook.exe"
+```
 
-- Implement the missing parts of the rule based `MoodAnalyzer`.
-- Add new positive and negative words.
-- Expand the dataset with more posts, including slang, emojis, sarcasm, or mixed emotions.
-- Observe unusual or incorrect predictions and think about why they happen.
-- Train a tiny machine learning model and compare its behavior to your rule based system.
-- Complete the model card with your findings about data, behavior, limitations, and improvements.
-- The goal is to help you reason about how models behave, how data shapes them, and why even small design choices matter.
+Run the reliability harness:
 
----
+```bash
+python -m tests.test_harness
+```
 
-## Tips
+## Sample Interactions
 
-- Start with preprocessing before updating scoring rules.
-- When debugging, print tokens, scores, or intermediate choices.
-- Ask an AI assistant to help create edge case posts or unusual wording.
-- Try examples that mislead or confuse your model. Failure cases teach you the most.
+### Sample 1: Active ransomware
+
+**Input:**
+
+```
+Multiple file servers showing thousands of file modifications per minute. Files renamed with .lockbit extension. README.txt ransom notes appearing in every directory. Volume Shadow Copies deleted via vssadmin 30 minutes ago.
+```
+
+**Output:**
+
+- Severity: `critical`
+- Confidence: `high`
+- Escalate: `true`
+- MITRE Techniques: `T1486`, `T1490`
+- Sources: `ransomware_indicators.md`, `mitre_credential_access_lateral.md`
+- Retrieval Score: `0.541`
+
+### Sample 2: Credential dumping (LSASS)
+
+**Input:**
+
+```
+EDR detected suspicious access to LSASS process memory by rundll32.exe with comsvcs.dll on workstation WKSTN-042. User account is jsmith. Process tree: cmd.exe -> rundll32.exe.
+```
+
+**Output:**
+
+- Severity: `critical`
+- Confidence: `high`
+- Escalate: `true`
+- MITRE Techniques: `T1003`, `T1003.001`
+- Sources: `mitre_credential_access_lateral.md`, `mitre_execution_persistence.md`, `log_analysis_windows.md`
+- Retrieval Score: `0.488`
+
+### Sample 3: Out-of-scope (guardrail behavior)
+
+**Input:**
+
+```
+asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet
+```
+
+**Output:**
+
+- Severity: `informational`
+- Confidence: `high`
+- Escalate: `false`
+- MITRE Techniques: none
+- Reasoning: "Alert contains gibberish content with no recognizable security indicators or actionable intelligence."
+
+## Design Decisions
+
+**sentence-transformers + numpy over a vector database**: With a corpus of 109 chunks, a full vector DB (Milvus, ChromaDB, Pinecone) would add complexity without performance benefit. numpy cosine similarity executes in milliseconds and the entire index fits in memory.
+
+**Strict JSON schema with validation**: SOC tools downstream (SIEM enrichment, ticketing systems) need predictable structured output. The prompt requires exact schema compliance, the parser strips markdown fences, and the validator enforces field types and enum values. Invalid output triggers the guardrail rather than degrading silently.
+
+**Retrieval guardrail over confident fabrication**: The most dangerous failure mode for an AI security tool is confident wrong answers. The system explicitly refuses to triage alerts when retrieval similarity falls below threshold, returning a transparent refusal that recommends manual analyst review.
+
+**MITRE ATT&CK technique citation as required output**: Forces the LLM to ground severity decisions in named adversary techniques rather than vague threat language, making outputs auditable and translatable to existing SOC workflows.
+
+## Testing Summary
+
+The reliability harness runs 7 representative alert scenarios covering phishing, ransomware, credential dumping, brute force, exploitation attempts, insider threat, and gibberish (guardrail test).
+
+Each test case validates four criteria: severity classification falls within expected range, escalation decision matches expectation, at least one expected MITRE technique is identified, and retrieval similarity score exceeds the case minimum.
+
+**Latest harness results:**
+
+- Passed: **6/7 (86%)**
+- Avg retrieval similarity: 0.433
+- Avg latency per alert: 7.7 seconds
+
+The single failure was on the phishing test, where the system correctly classified severity as critical and recommended escalation, but did not populate the MITRE technique field. This is documented in `model_card.md` along with the iteration history that produced this version.
+
+## Reliability and Evaluation
+
+The system implements four reliability mechanisms:
+
+1. **Retrieval guardrail**: minimum similarity threshold (0.20) prevents triage of out-of-corpus alerts
+2. **JSON schema validation**: enforces output structure, falls back to guardrail on malformed responses
+3. **Source attribution**: every triage report cites the corpus documents that grounded the decision
+4. **Automated harness**: 7-case test suite validates severity classification, MITRE mapping, and guardrail behavior
+
+## Reflection
+
+See `model_card.md` for full reflection on limitations, biases, misuse risks, and AI collaboration during development.
+
+## Loom Walkthrough
+
+[INSERT LOOM URL HERE]
+
+## Repository Structure
+
+```
+soc-triage-ai/
+├── triage.py                  # Main entry point and pipeline
+├── rag/
+│   ├── __init__.py
+│   ├── corpus.py              # Markdown corpus loader
+│   └── retriever.py           # Embedding-based retrieval
+├── data/threat_intel/         # 11 markdown threat intel documents (109 chunks)
+├── tests/
+│   ├── __init__.py
+│   └── test_harness.py        # Reliability evaluation harness
+├── assets/
+│   └── architecture.png       # System diagram
+├── README.md
+├── model_card.md
+├── requirements.txt
+├── .env.example
+└── .gitignore
+```
