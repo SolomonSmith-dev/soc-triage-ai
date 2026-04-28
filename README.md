@@ -14,13 +14,14 @@ The lesson carried forward: prompt engineering and structured output are general
 
 ![System Architecture](assets/architecture.png)
 
-The system processes alerts through five stages:
+The system processes alerts through six stages:
 
-1. **Embedding-based retrieval**: incoming alert text is embedded with sentence-transformers and matched against an indexed threat intelligence corpus using cosine similarity.
-2. **Guardrail check**: if no chunks meet the minimum similarity threshold, the system returns a hardcoded refusal that recommends manual review.
-3. **Grounded prompting**: top-4 retrieved chunks are injected into a structured prompt that constrains Claude Sonnet 4.5 to use only the provided context.
-4. **Schema validation**: LLM output is parsed and validated against a strict JSON schema. Invalid output triggers the guardrail response.
-5. **Reporting**: validated triage includes source attribution, retrieval similarity score, severity, confidence, MITRE techniques, recommended actions, and escalation decision.
+1. **Observable extraction**: deterministic regex extracts security observables (IPs, hashes, processes, hostnames, usernames, registry paths, etc.) from raw alert text. Runs before the LLM call so analysts get instant visual feedback.
+2. **Embedding-based retrieval**: alert text is embedded with sentence-transformers and matched against an indexed threat intelligence corpus using cosine similarity.
+3. **Guardrail check**: if no chunks meet the minimum similarity threshold, the system returns a hardcoded refusal that recommends manual review.
+4. **Grounded prompting**: top-4 retrieved chunks are injected into a structured prompt that constrains Claude Sonnet 4.5 to use only the provided context.
+5. **Schema validation**: LLM output is parsed and validated against a strict JSON schema. Invalid output triggers the guardrail response.
+6. **Case packaging**: validated triage, observables, retrieval evidence, and a derived uncertainty mode (`actionable` / `needs_more_context` / `insufficient_evidence` / `out_of_scope`) are wrapped into a single case envelope with a unique `SOC-YYYYMMDD-XXXX` ID, ready for export as JSON or Markdown.
 
 ## Setup
 
@@ -42,7 +43,13 @@ source venv/bin/activate
 streamlit run app.py --server.fileWatcherType=none
 ```
 
-The UI opens at `http://localhost:8501`. Use the sidebar sample alert buttons to load representative scenarios, or paste your own alert text. Click **Triage Alert** to generate a structured report with severity badge, MITRE techniques, recommended actions, reasoning, source attribution, and collapsible raw JSON.
+The UI opens at `http://localhost:8501` and presents a three-tab SOC dashboard:
+
+**Triage tab.** Paste an alert or pick a sample from the sidebar. Observable pills appear immediately (color-coded by group: network / host / hash / identity). Click **Run Triage** to produce a full case package: severity / escalation / confidence / uncertainty metric cards, summary, recommended actions, reasoning, MITRE techniques, source attribution, an evidence panel listing the retrieved chunks (with `cited` markers for chunks whose source was used), an analyst override form (severity + escalation with rationale, tracked in session state), and JSON / Markdown download buttons for the full case envelope.
+
+**Evaluation tab.** Loads the static reliability harness results from `tests/harness_results.json` by default — pass rate, severity / escalation accuracy, average retrieval, average latency, plus a per-case results table. A **Run live** button executes the full 7-case harness against the running engine for a fresh result set (costs 7 API calls).
+
+**System tab.** Version metadata (model, embeddings, corpus size, top-k, min similarity), a retrieval debugger (query → top-k chunks with scores, no LLM call), and corpus stats (chunks per source document).
 
 ### CLI
 
@@ -129,7 +136,9 @@ Each test case validates four criteria: severity classification falls within exp
 
 - Passed: **7/7 (100%)**
 - Avg retrieval similarity: 0.433
-- Avg latency per alert: 8.1 seconds
+- Avg latency per alert: 7.5 seconds
+
+The Evaluation tab in the Streamlit UI surfaces these same metrics live and supports re-running the harness on demand against the active engine.
 
 ## Limitations & Known Issues
 
@@ -139,12 +148,14 @@ Each test case validates four criteria: severity classification falls within exp
 
 ## Reliability and Evaluation
 
-The system implements four reliability mechanisms:
+The system implements six reliability mechanisms:
 
 1. **Retrieval guardrail**: minimum similarity threshold (0.20) prevents triage of out-of-corpus alerts
 2. **JSON schema validation**: enforces output structure, falls back to guardrail on malformed responses
 3. **Source attribution**: every triage report cites the corpus documents that grounded the decision
-4. **Automated harness**: 7-case test suite validates severity classification, MITRE mapping, and guardrail behavior
+4. **Evidence traceability**: the case package records every retrieved chunk with score and a `cited` flag, so reviewers can see which chunks the LLM actually used vs. which were merely above threshold
+5. **Uncertainty mode classification**: derived deterministically from confidence + retrieval score (no prompt changes), surfacing low-evidence or low-confidence cases before they reach an analyst
+6. **Automated harness**: 7-case test suite validates severity classification, MITRE mapping, and guardrail behavior; results are exposed in the Evaluation tab and re-runnable on demand
 
 ## Reflection
 
@@ -158,8 +169,11 @@ See `model_card.md` for full reflection on limitations, biases, misuse risks, an
 
 ```
 soc-triage-ai/
-├── app.py                     # Streamlit analyst-facing UI
-├── triage.py                  # Main entry point and pipeline
+├── app.py                     # Streamlit 3-tab dashboard (Triage / Evaluation / System)
+├── triage.py                  # LLM triage pipeline + triage_with_context()
+├── extractors.py              # Deterministic regex observable extraction
+├── case_package.py            # Case envelope builder + uncertainty mode derivation
+├── evaluation.py              # Harness loader + live runner + metrics
 ├── rag/
 │   ├── __init__.py
 │   ├── corpus.py              # Markdown corpus loader
@@ -167,7 +181,11 @@ soc-triage-ai/
 ├── data/threat_intel/         # 11 markdown threat intel documents (109 chunks)
 ├── tests/
 │   ├── __init__.py
-│   └── test_harness.py        # Reliability evaluation harness
+│   ├── test_harness.py        # Reliability evaluation harness (7 cases)
+│   ├── test_extractors.py     # Observable extraction unit tests (19)
+│   ├── test_case_package.py   # Case envelope unit tests (11)
+│   └── test_evaluation.py     # Evaluation module unit tests (4)
+├── docs/superpowers/          # Design specs and implementation plans
 ├── assets/
 │   └── architecture.png       # System diagram
 ├── README.md
