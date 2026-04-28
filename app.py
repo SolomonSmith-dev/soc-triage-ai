@@ -1,5 +1,7 @@
 """SOC Triage AI — Streamlit interface."""
 import json
+import os
+os.environ["TQDM_DISABLE"] = "1"
 import streamlit as st
 from triage import SOCTriage
 

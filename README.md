@@ -127,15 +127,13 @@ Each test case validates four criteria: severity classification falls within exp
 
 **Latest harness results:**
 
-- Passed: **6/7 (86%)**
+- Passed: **7/7 (100%)**
 - Avg retrieval similarity: 0.433
-- Avg latency per alert: 7.7 seconds
-
-The single failure was on the phishing test, where the system correctly classified severity as critical and recommended escalation, but did not populate the MITRE technique field. This is documented in `model_card.md` along with the iteration history that produced this version.
+- Avg latency per alert: 8.1 seconds
 
 ## Limitations & Known Issues
 
-- **Reliability harness: 6/7 pass rate.** The T1 phishing test occasionally returns empty MITRE techniques despite correct severity classification and escalation decision. This is a known LLM output variability issue documented in `model_card.md`.
+- **Reliability harness: 7/7 pass rate.** Earlier iterations had a T1 phishing failure traced to corpus chunking separating MITRE technique IDs from retrieved indicator text. Resolved by inlining technique references. See `model_card.md` for full iteration history.
 - **Streamlit file watcher noise.** The `sentence-transformers` library triggers `ModuleNotFoundError` warnings for unused image-processing modules during Streamlit's file watcher scan. Workaround: `--server.fileWatcherType=none`. This does not affect functionality.
 - **Static corpus.** The current threat intelligence base is 11 markdown documents (109 chunks). For production use, this would be replaced with live MITRE ATT&CK feeds and CVE database integrations.
 

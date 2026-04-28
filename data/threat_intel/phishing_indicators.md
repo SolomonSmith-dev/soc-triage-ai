@@ -2,19 +2,19 @@
 
 Phishing remains the top initial access vector. Effective triage requires evaluating sender, content, and target signals together.
 
-## Sender Indicators
+## Sender Indicators (MITRE ATT&CK: T1566 Phishing, T1566.002 Spearphishing Link)
 - Domain mismatch: display name shows legitimate brand, but envelope sender uses lookalike domain (microsft.com, paypa1.com, anthropic-secure.com)
 - Newly registered domains (less than 30 days old)
 - Free email services impersonating businesses
 - SPF, DKIM, or DMARC failures on domains that should authenticate
 - Compromised legitimate accounts sending out of character messages
 
-## Content Indicators
+## Content Indicators (MITRE ATT&CK: T1566.001 Spearphishing Attachment, T1566.002 Spearphishing Link, T1566.003 Spearphishing via Service)
 - Urgency manipulation: "your account will be closed in 24 hours", "immediate action required"
 - Authority impersonation: claims to be CEO, IT, HR, or external authority
 - Generic greetings on supposedly personalized messages
-- Hyperlinks where display text differs from actual URL
-- HTML attachments that render fake login pages locally
+- Hyperlinks where display text differs from actual URL (T1566.002)
+- HTML attachments that render fake login pages locally (T1566.001)
 - QR codes leading to credential harvesting (quishing)
 - Microsoft 365 OAuth consent phishing requesting excessive permissions
 
@@ -32,8 +32,8 @@ Phishing remains the top initial access vector. Effective triage requires evalua
 - Executive assistants with calendar and inbox delegation
 - HR personnel during hiring season
 
-## Post-Click Indicators
-- Authentication to attacker-controlled domain
+## Post-Click Indicators (MITRE ATT&CK: T1566.002 Spearphishing Link, T1078 Valid Accounts, T1204 User Execution)
+- Authentication to attacker-controlled domain (T1078 credential compromise)
 - Token theft via adversary-in-the-middle (Evilginx, EvilProxy frameworks)
 - OAuth grant to suspicious third-party app
 - Endpoint contacting known C2 infrastructure
