@@ -163,7 +163,7 @@ See `model_card.md` for full reflection on limitations, biases, misuse risks, an
 
 ## Loom Walkthrough
 
-[INSERT LOOM URL HERE]
+[https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9]
 
 ## Repository Structure
 
