@@ -5,3 +5,8 @@ venv/
 .venv/
 .DS_Store
 .claude/
+packages/contracts/dist/
+
+# Override global ~/.gitignore_global (.env.*) so docs-only example files are tracked
+!.env.example
+!apps/web/.env.local.example
