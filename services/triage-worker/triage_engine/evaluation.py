@@ -11,11 +11,11 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from tests.test_harness import TEST_CASES, evaluate_case
+from tests.harness.test_harness import TEST_CASES, evaluate_case
 
 
 def load_harness_results(
-    path: str = "tests/harness_results.json",
+    path: str = "tests/harness/harness_results.json",
 ) -> Optional[Dict]:
     """Load and parse harness results from disk.
 

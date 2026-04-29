@@ -1,6 +1,6 @@
 """Tests for evaluation results loader and metrics derivation."""
 import json
-from evaluation import (
+from triage_engine.evaluation import (
     load_harness_results,
     compute_eval_metrics,
 )

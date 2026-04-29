@@ -21,7 +21,7 @@
       "techniques_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 7.6
+    "latency_seconds": 6.65
   },
   {
     "id": "T2_ransomware_active",
@@ -44,7 +44,7 @@
       "techniques_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 7.5
+    "latency_seconds": 7.87
   },
   {
     "id": "T3_credential_dumping_lsass",
@@ -59,8 +59,8 @@
     "retrieval_score": 0.488,
     "sources": [
       "log_analysis_windows.md",
-      "mitre_credential_access_lateral.md",
-      "mitre_execution_persistence.md"
+      "mitre_execution_persistence.md",
+      "mitre_credential_access_lateral.md"
     ],
     "passed": true,
     "checks": {
@@ -69,7 +69,7 @@
       "techniques_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 7.58
+    "latency_seconds": 8.09
   },
   {
     "id": "T4_brute_force_ssh",
@@ -92,7 +92,7 @@
       "techniques_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 8.46
+    "latency_seconds": 7.08
   },
   {
     "id": "T5_log4shell_unverified_patch_claim",
@@ -114,7 +114,7 @@
       "techniques_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 8.21
+    "latency_seconds": 7.06
   },
   {
     "id": "T6_gibberish_guardrail",
@@ -134,7 +134,7 @@
       "escalate_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 5.35
+    "latency_seconds": 5.32
   },
   {
     "id": "T7_insider_exfil_departing",
@@ -157,6 +157,6 @@
       "escalate_match": true,
       "retrieval_score_ok": true
     },
-    "latency_seconds": 8.15
+    "latency_seconds": 7.57
   }
 ]

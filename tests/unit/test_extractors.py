@@ -1,5 +1,5 @@
 """Tests for deterministic observable extraction."""
-from extractors import extract_observables
+from triage_engine.extractors import extract_observables
 
 
 def test_ipv4_basic():

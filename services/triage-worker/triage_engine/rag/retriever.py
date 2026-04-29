@@ -74,11 +74,13 @@ class ThreatIntelRetriever:
 
 if __name__ == "__main__":
     # Smoke test
-    from rag.corpus import load_corpus
+    from pathlib import Path
+    from triage_engine.rag.corpus import load_corpus
 
     logging.basicConfig(level=logging.INFO)
     retriever = ThreatIntelRetriever()
-    retriever.index(load_corpus())
+    corpus_dir = str(Path(__file__).parent.parent / "data" / "threat_intel")
+    retriever.index(load_corpus(corpus_dir))
 
     test_query = "PowerShell encoded command spawned by outlook.exe"
     print(f"\nTest query: {test_query}\n")

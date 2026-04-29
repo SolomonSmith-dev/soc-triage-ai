@@ -7,15 +7,15 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from triage import SOCTriage
-from extractors import extract_observables
-from case_package import build_case_package, VERSION_META
-from evaluation import (
+from triage_engine.triage import SOCTriage, CORPUS_DIR
+from triage_engine.extractors import extract_observables
+from triage_engine.case_package import build_case_package, VERSION_META
+from triage_engine.evaluation import (
     load_harness_results,
     run_harness_live,
     compute_eval_metrics,
 )
-from rag.corpus import load_corpus
+from triage_engine.rag.corpus import load_corpus
 
 st.set_page_config(
     page_title="SOC Triage AI",
@@ -111,7 +111,7 @@ def load_triage():
 
 @st.cache_resource
 def cached_corpus():
-    return load_corpus()
+    return load_corpus(CORPUS_DIR)
 
 
 SAMPLES = {

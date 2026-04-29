@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import List, Dict, Any
 
-from triage import SOCTriage
+from triage_engine.triage import SOCTriage  # v2 monorepo path; was: from triage import SOCTriage
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -197,8 +197,8 @@ def run_harness():
             print(f"    Techniques: {r.get('techniques')}")
             print(f"    Failed checks: {r.get('checks')}")
 
-    Path("tests/harness_results.json").write_text(json.dumps(results, indent=2))
-    print(f"\nFull results: tests/harness_results.json")
+    Path("tests/harness/harness_results.json").write_text(json.dumps(results, indent=2))
+    print(f"\nFull results: tests/harness/harness_results.json")
 
     return passed, total
 

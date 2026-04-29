@@ -12,13 +12,16 @@ import logging
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Dict, Any
 
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from rag.corpus import load_corpus
-from rag.retriever import ThreatIntelRetriever
+from triage_engine.rag.corpus import load_corpus
+from triage_engine.rag.retriever import ThreatIntelRetriever
+
+CORPUS_DIR = str(Path(__file__).parent / "data" / "threat_intel")
 
 load_dotenv()
 
@@ -72,7 +75,7 @@ class SOCTriage:
             )
         self.client = Anthropic(api_key=api_key)
         self.retriever = ThreatIntelRetriever()
-        self.retriever.index(load_corpus())
+        self.retriever.index(load_corpus(CORPUS_DIR))
 
     def triage(self, alert: str) -> Dict[str, Any]:
         """Triage a security alert. Returns structured JSON dict."""

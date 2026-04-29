@@ -1,6 +1,6 @@
 """Tests for case package envelope builder."""
 import re
-from case_package import build_case_package, derive_uncertainty_mode
+from triage_engine.case_package import build_case_package, derive_uncertainty_mode
 
 
 def _triage_stub(severity="high", confidence="high"):
