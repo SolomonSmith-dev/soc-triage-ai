@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   unit-tests:
-    name: Unit tests (extractors / case_package / evaluation)
+    name: Engine unit tests (extractors / case_package / evaluation)
     runs-on: ubuntu-latest
 
     steps:
@@ -30,5 +30,28 @@ jobs:
           pip install -e services/triage-worker
           pip install pytest
 
-      - name: Run unit tests
+      - name: Run engine unit tests
         run: pytest tests/unit -v
+
+  api-tests:
+    name: API unit tests (security / auth / services)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install soc-api (pulls triage-engine via path dep)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e services/triage-worker
+          pip install -e apps/api
+          pip install pytest
+
+      - name: Run API unit tests
+        run: pytest apps/api/tests -v
