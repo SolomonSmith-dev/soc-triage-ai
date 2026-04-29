@@ -157,13 +157,19 @@ The system implements six reliability mechanisms:
 5. **Uncertainty mode classification**: derived deterministically from confidence + retrieval score (no prompt changes), surfacing low-evidence or low-confidence cases before they reach an analyst
 6. **Automated harness**: 7-case test suite validates severity classification, MITRE mapping, and guardrail behavior; results are exposed in the Evaluation tab and re-runnable on demand
 
+## Roadmap
+
+This `main` branch (tag [`v1.0-codepath-final`](https://github.com/SolomonSmith-dev/soc-triage-ai/releases/tag/v1.0-codepath-final)) is the productized MVP described above: a working Streamlit-based SOC analyst tool with retrieval-augmented triage, deterministic observables, evidence traceability, and analyst overrides.
+
+A v2 migration is planned on the [`v2-platform`](https://github.com/SolomonSmith-dev/soc-triage-ai/tree/v2-platform) branch, turning this into **SOC Triage Copilot** — a full-stack platform with FastAPI + Next.js, PostgreSQL with pgvector, Redis/Celery async workers, scheduled MITRE ATT&CK + CISA KEV ingestion, Docker, GitHub Actions, Terraform, and OpenTelemetry. The v1 AI engine is kept verbatim; the platform is built around it. Full migration plan: [`docs/superpowers/plans/2026-04-28-v2-platform.md`](https://github.com/SolomonSmith-dev/soc-triage-ai/blob/v2-platform/docs/superpowers/plans/2026-04-28-v2-platform.md).
+
 ## Reflection
 
 See `model_card.md` for full reflection on limitations, biases, misuse risks, and AI collaboration during development.
 
 ## Loom Walkthrough
 
-[INSERT LOOM URL HERE]
+[https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9]
 
 ## Repository Structure
 
