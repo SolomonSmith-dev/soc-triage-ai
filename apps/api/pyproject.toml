@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "soc-api"
+version = "0.2.0-dev"
+description = "FastAPI backend for the SOC Triage Copilot platform."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.5.0",
+    "sqlalchemy[asyncio]>=2.0.30",
+    "greenlet>=3.0.0",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "pgvector>=0.3.0",
+    "python-multipart>=0.0.9",
+    "argon2-cffi>=23.0.0",
+    "bcrypt>=4.2.0",
+    "PyJWT>=2.8.0",
+    "triage-engine",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/soc_api"]
+
+[tool.uv.sources]
+triage-engine = { path = "../../services/triage-worker", editable = true }

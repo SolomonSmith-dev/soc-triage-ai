@@ -1,0 +1,13 @@
+[project]
+name = "soc-triage-copilot"
+version = "0.2.0-dev"
+description = "Full-stack SOC analyst incident response platform. Phase 0 monorepo skeleton; v2 platform code lands phase-by-phase."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
