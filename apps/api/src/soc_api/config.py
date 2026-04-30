@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0")
     cors_origins: list[str] = Field(default=["http://localhost:3000"])
     anthropic_api_key: str | None = None
+    nextauth_secret: str = Field(default="dev-secret-change-in-production")
 
 
 @lru_cache
