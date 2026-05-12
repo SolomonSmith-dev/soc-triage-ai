@@ -6,6 +6,10 @@
 
 A SOC analyst assistant that ingests raw security alerts, retrieves relevant threat intelligence, and produces structured triage reports including severity classification, MITRE technique mapping, recommended actions, and escalation decisions.
 
+> **See it in action:** [Loom walkthrough](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9) (3 min) shows the Streamlit UI triaging a live ransomware alert end-to-end. Screenshot in `assets/streamlit-ui.png` (pending).
+
+![Streamlit UI](assets/streamlit-ui.png)
+
 ## Base Project
 
 This project is conceptually derived from **The Mood Machine** (CodePath AI110 Module 3), which classified text into sentiment categories using prompt-engineered LLM calls. SOC Triage AI applies the same core pattern, LLM-based categorical classification with structured output, to a higher-stakes domain. The implementation is largely new: retrieval-augmented grounding, MITRE ATT&CK mapping, schema validation, and a reliability harness are additions specific to the security domain.
