@@ -1,5 +1,7 @@
 # SOC Triage AI
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) ![Reliability](https://img.shields.io/badge/harness-7%2F7%20passing-success)
+
 **RAG-grounded security alert triage with structured JSON output, MITRE ATT&CK mapping, and reliability evaluation.**
 
 A SOC analyst assistant that ingests raw security alerts, retrieves relevant threat intelligence, and produces structured triage reports including severity classification, MITRE technique mapping, recommended actions, and escalation decisions.
