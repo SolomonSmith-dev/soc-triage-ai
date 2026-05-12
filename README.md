@@ -47,7 +47,7 @@ The UI opens at `http://localhost:8501` and presents a three-tab SOC dashboard:
 
 **Triage tab.** Paste an alert or pick a sample from the sidebar. Observable pills appear immediately (color-coded by group: network / host / hash / identity). Click **Run Triage** to produce a full case package: severity / escalation / confidence / uncertainty metric cards, summary, recommended actions, reasoning, MITRE techniques, source attribution, an evidence panel listing the retrieved chunks (with `cited` markers for chunks whose source was used), an analyst override form (severity + escalation with rationale, tracked in session state), and JSON / Markdown download buttons for the full case envelope.
 
-**Evaluation tab.** Loads the static reliability harness results from `tests/harness_results.json` by default — pass rate, severity / escalation accuracy, average retrieval, average latency, plus a per-case results table. A **Run live** button executes the full 7-case harness against the running engine for a fresh result set (costs 7 API calls).
+**Evaluation tab.** Loads the static reliability harness results from `tests/harness_results.json` by default: pass rate, severity / escalation accuracy, average retrieval, average latency, plus a per-case results table. A **Run live** button executes the full 7-case harness against the running engine for a fresh result set (costs 7 API calls).
 
 **System tab.** Version metadata (model, embeddings, corpus size, top-k, min similarity), a retrieval debugger (query → top-k chunks with scores, no LLM call), and corpus stats (chunks per source document).
 
@@ -161,7 +161,7 @@ The system implements six reliability mechanisms:
 
 This `main` branch (tag [`v1.0-codepath-final`](https://github.com/SolomonSmith-dev/soc-triage-ai/releases/tag/v1.0-codepath-final)) is the productized MVP described above: a working Streamlit-based SOC analyst tool with retrieval-augmented triage, deterministic observables, evidence traceability, and analyst overrides.
 
-A v2 migration is planned on the [`v2-platform`](https://github.com/SolomonSmith-dev/soc-triage-ai/tree/v2-platform) branch, turning this into **SOC Triage Copilot** — a full-stack platform with FastAPI + Next.js, PostgreSQL with pgvector, Redis/Celery async workers, scheduled MITRE ATT&CK + CISA KEV ingestion, Docker, GitHub Actions, Terraform, and OpenTelemetry. The v1 AI engine is kept verbatim; the platform is built around it. Full migration plan: [`docs/superpowers/plans/2026-04-28-v2-platform.md`](https://github.com/SolomonSmith-dev/soc-triage-ai/blob/v2-platform/docs/superpowers/plans/2026-04-28-v2-platform.md).
+A v2 migration is planned on the [`v2-platform`](https://github.com/SolomonSmith-dev/soc-triage-ai/tree/v2-platform) branch, turning this into **SOC Triage Copilot**, a full-stack platform with FastAPI + Next.js, PostgreSQL with pgvector, Redis/Celery async workers, scheduled MITRE ATT&CK + CISA KEV ingestion, Docker, GitHub Actions, Terraform, and OpenTelemetry. The v1 AI engine is kept verbatim; the platform is built around it. Full migration plan: [`docs/superpowers/plans/2026-04-28-v2-platform.md`](https://github.com/SolomonSmith-dev/soc-triage-ai/blob/v2-platform/docs/superpowers/plans/2026-04-28-v2-platform.md).
 
 ## Reflection
 
