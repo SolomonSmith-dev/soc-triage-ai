@@ -1,0 +1,76 @@
+%% soc-triage-ai — RAG-grounded SOC alert triage pipeline
+%% Source of truth: README.md, CLAUDE.md, model_card.md, packages/contracts/
+%% Phase: mid Phase 2 (v2-platform branch). Monorepo migration in progress.
+flowchart TB
+    subgraph Input
+        ALERT[Raw Security Alert<br/>text from EDR / SIEM]
+    end
+
+    subgraph Pipeline[Six-Stage Triage Pipeline]
+        S1[1. Observable Extraction<br/>regex: IPs, hashes, processes,<br/>hostnames, users, registry]
+        S2[2. Embedding Retrieval<br/>sentence-transformers<br/>cosine sim vs TI corpus]
+        S3{3. Guardrail<br/>top-k above threshold?}
+        S4[4. Grounded Prompt<br/>top-4 chunks injected<br/>Claude Sonnet 4.5]
+        S5{5. Schema Validation<br/>packages/contracts/}
+        S6[6. Case Packaging<br/>SOC-YYYYMMDD-XXXX]
+    end
+
+    REFUSE[Refusal Response<br/>recommend manual review]
+
+    subgraph Corpus[RAG Corpus - rag/]
+        TI[Threat Intel chunks<br/>MITRE technique docs<br/>ransomware indicators<br/>log analysis playbooks]
+    end
+
+    subgraph Output[Case Envelope]
+        O1[Severity + Confidence]
+        O2[MITRE ATT&CK techniques]
+        O3[Recommended actions]
+        O4[Retrieval evidence + citations]
+        O5[Uncertainty mode<br/>actionable / needs_more_context /<br/>insufficient_evidence / out_of_scope]
+        O6[JSON / Markdown export]
+    end
+
+    subgraph Apps[Monorepo - apps/]
+        WEB[apps/web<br/>Next.js Streamlit successor]
+        API[apps/api<br/>FastAPI :8000]
+        CONSOLE[apps/dev-console<br/>observability]
+    end
+
+    subgraph Services[services/ + infra]
+        WORKER[services/triage-worker]
+        PG[(Postgres + pgvector)]
+        REDIS[(Redis queue)]
+    end
+
+    subgraph Quality[Reliability]
+        HARNESS[tests/harness.py<br/>+ harness_results.json]
+        CARD[model_card.md<br/>real limits + failures]
+        CONTRACTS[packages/contracts/<br/>JSON schema = source of truth]
+    end
+
+    ALERT --> S1 --> S2
+    TI --> S2
+    S2 --> S3
+    S3 -- no --> REFUSE
+    S3 -- yes --> S4 --> S5
+    S5 -- invalid --> REFUSE
+    S5 -- valid --> S6
+    S6 --> Output
+
+    WEB --> API --> WORKER
+    WORKER --> S1
+    API --> PG
+    API --> REDIS
+    CONSOLE --> API
+
+    CONTRACTS -.contract.-> S5
+    CONTRACTS -.contract.-> O6
+    HARNESS -.measures.-> Pipeline
+    HARNESS -.feeds.-> CARD
+
+    classDef guard fill:#fee2e2,stroke:#b91c1c
+    classDef out fill:#dbeafe,stroke:#1d4ed8
+    classDef qa fill:#dcfce7,stroke:#15803d
+    class S3,S5,REFUSE guard
+    class Output,O1,O2,O3,O4,O5,O6 out
+    class HARNESS,CARD,CONTRACTS,Quality qa
