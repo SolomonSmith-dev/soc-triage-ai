@@ -53,6 +53,7 @@ jobs:
           pip install -e services/triage-worker
           pip install -e apps/api
           pip install pytest
+          pip install pytest-asyncio
 
       - name: Run API unit tests
         run: pytest apps/api/tests -v
