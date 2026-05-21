@@ -1,6 +1,8 @@
 """Integration tests for API key authentication on POST /alerts."""
 from __future__ import annotations
 
+import uuid
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +19,12 @@ _ALERT_PAYLOAD = {
 
 @pytest.fixture
 async def api_key(session: AsyncSession) -> str:
-    """Insert an active ApiKey row; return the plaintext key."""
+    """Insert an active ApiKey row; return a Bearer-ready '{id}.{secret}' token."""
     plaintext, hashed = generate_api_key()
-    session.add(ApiKey(key_hash=hashed, label="test-key", scopes=["ingest"]))
+    key_id = uuid.uuid4()
+    session.add(ApiKey(id=key_id, key_hash=hashed, label="test-key", scopes=["ingest"]))
     await session.commit()
-    return plaintext
+    return f"{key_id}.{plaintext}"
 
 
 async def test_ingest_requires_auth(client: AsyncClient) -> None:
