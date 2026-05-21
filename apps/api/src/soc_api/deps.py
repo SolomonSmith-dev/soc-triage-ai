@@ -28,10 +28,22 @@ async def current_api_key(
         raise _UNAUTH
     raw_key = authorization.removeprefix("Bearer ")
 
-    result = await session.execute(select(ApiKey).where(ApiKey.revoked_at.is_(None)))
-    for key in result.scalars():
-        if verify_api_key(key.key_hash, raw_key):
-            return key
+    key_id, separator, key_secret = raw_key.partition(".")
+    if not separator or not key_id or not key_secret:
+        raise _UNAUTH
+
+    result = await session.execute(
+        select(ApiKey).where(
+            ApiKey.id == key_id,
+            ApiKey.revoked_at.is_(None),
+        )
+    )
+    key = result.scalar_one_or_none()
+    if not key:
+        raise _UNAUTH
+
+    if verify_api_key(key.key_hash, key_secret):
+        return key
 
     raise _UNAUTH
 
