@@ -153,7 +153,11 @@ Computed identically in live and replay modes by `metrics.py`:
 
 Aggregate metrics are printed for the reviewer but do not gate.
 
-**Baseline updates:** a live run with `--update-baseline` rewrites the file. Any PR that changes model behavior carries the metric deltas in its diff.
+**Why no aggregate pass-rate gate.** CI runs in replay mode, which is deterministic: cassettes are frozen, so every case's pass or fail is fixed by code plus recorded responses, with no LLM sampling jitter. The per-case regression gate therefore catches every pass-to-fail transition, including a single case. An aggregate gate with any tolerance (say, more than 2 points out of 100) would allow a one or two case regression to pass silently, making it strictly weaker than the per-case gate. Aggregate thresholds exist to absorb nondeterminism, and CI replay has none, so an aggregate gate here is redundant at best and regression-hiding at worst.
+
+**Where aggregate judgment lives instead.** The only nondeterministic step is the local live re-record. When `--update-baseline` runs, it prints a conspicuous diff against the previous baseline (standard and adversarial pass rate, per-category pass rates, escalation recall, calibration error) and requires the human to confirm before overwriting. That puts the aggregate call where the noise actually is, as a human checkpoint rather than a CI rule.
+
+**Baseline updates:** a live run with `--update-baseline` rewrites the file after the confirmation step above. Any PR that changes model behavior carries the metric deltas in its diff.
 
 ### CI job
 
