@@ -1,3 +1,5 @@
+<!-- LifeOS-status: MAINTENANCE 2026-07-09 -->
+
 # CLAUDE.md: soc-triage-ai
 
 Operating contract for any Claude session opened inside `~/Projects/soc-triage-ai`. Loaded automatically. Read before responding.
