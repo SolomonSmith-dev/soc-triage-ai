@@ -26,9 +26,14 @@ class _FakeClient:
         self.messages = _FakeMessages()
 
 
+class _FakeRetriever:
+    def retrieve(self, query, top_k=4, min_score=0.20):
+        return [({"id": "x_0", "source": "x.md", "text": "ctx"}, 0.5)]
+
+
 def test_injected_client_is_used_without_api_key(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    triage = SOCTriage(client=_FakeClient())
+    triage = SOCTriage(client=_FakeClient(), retriever=_FakeRetriever())
     result = triage.triage("PowerShell encoded command from outlook.exe")
     assert result["severity"] == "low"
     assert result["escalate"] is False

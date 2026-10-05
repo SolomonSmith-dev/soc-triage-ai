@@ -67,15 +67,24 @@ Respond with ONLY valid JSON matching this exact schema. No markdown fences, no 
 class SOCTriage:
     """Main triage pipeline. RAG retrieval + structured LLM output + guardrails."""
 
-    def __init__(self):
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "ANTHROPIC_API_KEY not set. Add to .env or export in shell."
-            )
-        self.client = Anthropic(api_key=api_key)
-        self.retriever = ThreatIntelRetriever()
-        self.retriever.index(load_corpus(CORPUS_DIR))
+    def __init__(self, client=None, retriever=None):
+        """Optional `client` and `retriever` are test and demo seams.
+
+        `client` needs only `messages.create(...)`. The harness injects a
+        recording or replaying wrapper. Stages 3 and 5 are unchanged.
+        """
+        if client is None:
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "ANTHROPIC_API_KEY not set. Add to .env or export in shell."
+                )
+            client = Anthropic(api_key=api_key)
+        self.client = client
+        if retriever is None:
+            retriever = ThreatIntelRetriever()
+            retriever.index(load_corpus(CORPUS_DIR))
+        self.retriever = retriever
 
     def triage(self, alert: str) -> Dict[str, Any]:
         """Triage a security alert. Returns structured JSON dict."""
