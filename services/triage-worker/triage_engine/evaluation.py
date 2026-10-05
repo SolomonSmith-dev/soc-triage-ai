@@ -88,6 +88,24 @@ def compute_eval_metrics(results: List[Dict]) -> Dict:
     latencies = [r.get("latency_seconds") for r in results
                  if r.get("latency_seconds") is not None]
 
+    def _percentile(values: List[float], q: float) -> Optional[float]:
+        # Nearest-rank percentile; None when there is nothing to rank.
+        if not values:
+            return None
+        ranked = sorted(values)
+        idx = max(0, min(len(ranked) - 1, -(-int(q * 100) * len(ranked) // 100) - 1))
+        return round(ranked[idx], 2)
+
+    # Escalation errors split by direction: a missed escalation (should have
+    # escalated, did not) is the costly SOC failure; over-escalation is noise.
+    esc_checked = [r for r in results
+                   if "checks" in r and "escalate_match" in r["checks"]]
+    missed = sum(1 for r in esc_checked
+                 if not r["checks"]["escalate_match"] and r.get("escalate") is False)
+    over = sum(1 for r in esc_checked
+               if not r["checks"]["escalate_match"] and r.get("escalate") is True)
+    errors = sum(1 for r in results if r.get("error"))
+
     return {
         "total": total,
         "passed": passed,
@@ -102,5 +120,14 @@ def compute_eval_metrics(results: List[Dict]) -> Dict:
         "avg_latency": (
             round(sum(latencies) / len(latencies), 2) if latencies else 0.0
         ),
+        "latency_p50": _percentile(latencies, 0.50),
+        "latency_p95": _percentile(latencies, 0.95),
+        "missed_escalation_rate": (
+            round(missed / len(esc_checked), 3) if esc_checked else None
+        ),
+        "over_escalation_rate": (
+            round(over / len(esc_checked), 3) if esc_checked else None
+        ),
+        "error_rate": round(errors / total, 3),
         "per_case": results,
     }

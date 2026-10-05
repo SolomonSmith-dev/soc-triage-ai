@@ -50,3 +50,33 @@ def test_compute_metrics_per_check_accuracy():
     m = compute_eval_metrics(results)
     assert m["severity_accuracy"] == 0.5
     assert m["escalation_accuracy"] == 1.0
+
+
+def test_compute_metrics_escalation_direction_and_errors():
+    results = [
+        {"id": "T1", "passed": False, "escalate": False,
+         "checks": {"escalate_match": False}, "latency_seconds": 1.0},
+        {"id": "T2", "passed": False, "escalate": True,
+         "checks": {"escalate_match": False}, "latency_seconds": 2.0},
+        {"id": "T3", "passed": True, "escalate": True,
+         "checks": {"escalate_match": True}, "latency_seconds": 3.0},
+        {"id": "T4", "passed": False, "error": "TimeoutError: x"},
+    ]
+    m = compute_eval_metrics(results)
+    assert m["missed_escalation_rate"] == 0.333
+    assert m["over_escalation_rate"] == 0.333
+    assert m["error_rate"] == 0.25
+
+
+def test_compute_metrics_latency_percentiles():
+    results = [{"id": f"T{i}", "passed": True, "latency_seconds": float(i)}
+               for i in range(1, 21)]
+    m = compute_eval_metrics(results)
+    assert m["latency_p50"] == 10.0
+    assert m["latency_p95"] == 19.0
+
+
+def test_compute_metrics_percentiles_none_without_latency():
+    m = compute_eval_metrics([{"id": "T1", "passed": True}])
+    assert m["latency_p50"] is None
+    assert m["missed_escalation_rate"] is None
