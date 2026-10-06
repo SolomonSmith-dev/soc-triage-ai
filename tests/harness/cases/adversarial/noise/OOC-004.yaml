@@ -1,0 +1,16 @@
+id: OOC-004
+category: noise
+tags: [out-of-corpus, menu]
+adversarial: {type: noise}
+alert: |
+  Cafeteria menu for Thursday: roasted vegetable soup, chicken tikka wrap, fruit cup.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

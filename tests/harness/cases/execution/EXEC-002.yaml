@@ -1,0 +1,16 @@
+id: EXEC-002
+category: execution
+tags: [encoded-powershell]
+adversarial: null
+alert: |
+  Parent process outlook.exe spawned powershell.exe with arguments '-enc JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAA...' (600 characters) on WKSTN-018.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1059, T1204]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "encoded PowerShell from Outlook"

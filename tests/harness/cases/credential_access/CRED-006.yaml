@@ -1,0 +1,16 @@
+id: CRED-006
+category: credential_access
+tags: [quarantined]
+adversarial: null
+alert: |
+  Windows Defender flagged a Mimikatz binary in the Downloads folder of a developer laptop. File was quarantined and no process execution was recorded.
+expect:
+  severity_in: [medium, high]
+  techniques_any: [T1003]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_1, mitre_credential_access_lateral_2, log_analysis_windows_16]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "quarantined tool, no execution"

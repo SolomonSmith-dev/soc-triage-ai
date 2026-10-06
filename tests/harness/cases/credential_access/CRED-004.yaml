@@ -1,0 +1,16 @@
+id: CRED-004
+category: credential_access
+tags: [browser-creds]
+adversarial: null
+alert: |
+  Browser credential store files (Login Data) on WKSTN-118 were read by a PowerShell script launched from a user's Downloads folder. A POST to an external host followed.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1555]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_5]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "credential store theft"

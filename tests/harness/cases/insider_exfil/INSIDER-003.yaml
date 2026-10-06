@@ -1,0 +1,16 @@
+id: INSIDER-003
+category: insider_exfil
+tags: [dlp, off-hours]
+adversarial: null
+alert: |
+  Employee tkim uploaded 8 GB to a personal Dropbox from a corporate laptop at 02:10 local time. DLP policy 'Customer PII' triggered on 14 files.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1567]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7, network_anomalies_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "DLP hit with off-hours upload"

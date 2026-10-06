@@ -1,0 +1,16 @@
+id: PERSIST-007
+category: persistence
+tags: [hidden-account]
+adversarial: null
+alert: |
+  A new local administrator account 'support$' was created on SRV-APP-02 and added to the Administrators group by a remote session, then hidden from the logon screen via registry.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1078, T1543]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8, log_analysis_windows_8]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "hidden local admin"

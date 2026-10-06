@@ -1,0 +1,15 @@
+id: EXEC-006
+category: execution
+tags: [scheduled, signed]
+adversarial: null
+alert: |
+  PowerShell with -ExecutionPolicy Bypass ran the signed internal script Backup-Config.ps1 under the service account svc_backup, as scheduled nightly at 01:00 for the last 400 days.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "routine admin script"

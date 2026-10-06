@@ -1,0 +1,16 @@
+id: C2-004
+category: c2_beaconing
+tags: [scan]
+adversarial: null
+alert: |
+  Internal host 10.20.4.31 scanned 4,000 hosts on TCP/445 in 6 minutes. Connection failure ratio 97 percent. Host is a user workstation.
+expect:
+  severity_in: [medium, high]
+  techniques_any: [T1046]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_5, network_anomalies_6, network_anomalies_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "horizontal scan from workstation"

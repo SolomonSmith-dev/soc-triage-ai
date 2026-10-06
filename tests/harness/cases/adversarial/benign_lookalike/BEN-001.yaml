@@ -1,0 +1,15 @@
+id: BEN-001
+category: adversarial
+tags: [benign-lookalike, backup]
+adversarial: {type: benign_lookalike}
+alert: |
+  vssadmin create shadow /for=C: was run by backup service account svc_veeam from the backup server BK-01 at 01:00, during the approved nightly backup window.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "shadow copy creation, not deletion"

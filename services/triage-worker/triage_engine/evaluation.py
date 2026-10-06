@@ -30,6 +30,8 @@ def load_harness_results(
         return None
     if not data:
         return None
+    if isinstance(data, dict):  # new format: {"meta", "metrics", "results"}
+        return {"results": data.get("results", []), "meta": data.get("meta", {})}
     return {"results": data}
 
 

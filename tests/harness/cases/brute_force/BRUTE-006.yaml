@@ -1,0 +1,16 @@
+id: BRUTE-006
+category: brute_force
+tags: [rdp, lockout]
+adversarial: null
+alert: |
+  RDP on the internet-facing host RDP-GW-01 shows 1,200 failed logons from 3 source IPs in 15 minutes. NLA is enabled and account lockout fired for 7 accounts.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1110, T1133]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "RDP brute force with lockouts"

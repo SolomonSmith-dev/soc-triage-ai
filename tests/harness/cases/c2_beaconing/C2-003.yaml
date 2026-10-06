@@ -1,0 +1,16 @@
+id: C2-003
+category: c2_beaconing
+tags: [dns-tunnel]
+adversarial: null
+alert: |
+  DNS queries from SRV-WEB-01 average 78 characters in length with high entropy to a single domain (a1b2.example-tunnel.net), 4,000 queries per hour.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1572, T1071]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_2, network_anomalies_3, network_anomalies_4, network_anomalies_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "DNS tunneling"

@@ -1,0 +1,16 @@
+id: PERSIST-004
+category: persistence
+tags: [service]
+adversarial: null
+alert: |
+  Service 'WinSvcHelper' installed on SRV-APP-01 via sc.exe with binary path in C:\ProgramData and automatic start. Parent process is cmd.exe launched through a remote session.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1543]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8, log_analysis_windows_13]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "new service from remote session"

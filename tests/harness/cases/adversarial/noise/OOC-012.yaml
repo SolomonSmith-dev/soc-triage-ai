@@ -1,0 +1,16 @@
+id: OOC-012
+category: noise
+tags: [out-of-corpus, calendar]
+adversarial: {type: noise}
+alert: |
+  Q3 planning sync moved from 2 PM to 3 PM. Same room, same agenda, slides due Monday.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

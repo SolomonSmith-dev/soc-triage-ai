@@ -1,0 +1,16 @@
+id: CON-004
+category: adversarial
+tags: [contradiction, impossible-travel]
+adversarial: {type: contradiction}
+alert: |
+  User says they are traveling, but account jdoe signed in from the US and from a hosting provider in another continent within 6 minutes. MFA prompt was approved on both.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_initial_access_6, mitre_initial_access_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "impossible travel despite explanation"

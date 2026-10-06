@@ -1,0 +1,16 @@
+id: CON-005
+category: adversarial
+tags: [contradiction, av-clean]
+adversarial: {type: contradiction}
+alert: |
+  Antivirus reports the file server as clean, but 4,000 files were renamed with the .locked extension in 5 minutes and ransom notes appeared in three shares.
+expect:
+  severity_in: [critical]
+  techniques_any: [T1486]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "AV status contradicts file activity"

@@ -1,0 +1,16 @@
+id: OOC-002
+category: noise
+tags: [out-of-corpus, sports]
+adversarial: {type: noise}
+alert: |
+  Final score: Lakers 112, Celtics 108. Series tied 2-2 heading into game five on Friday.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

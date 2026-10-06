@@ -1,0 +1,15 @@
+id: BRUTE-004
+category: brute_force
+tags: [normal-user]
+adversarial: null
+alert: |
+  Three failed logins for user mlee on the VPN gateway within 5 minutes from the user's usual city, followed by a successful login with MFA approved.
+expect:
+  severity_in: [low, informational]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "typo then success"

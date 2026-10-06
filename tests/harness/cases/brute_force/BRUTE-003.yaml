@@ -1,0 +1,16 @@
+id: BRUTE-003
+category: brute_force
+tags: [success-after-failures]
+adversarial: null
+alert: |
+  After 800 failed SSH logins from 203.0.113.9 against srv-web-02, a successful login for user 'deploy' was logged from the same IP. Auth log shows the key was not used.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1110]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "brute force succeeded"

@@ -1,0 +1,16 @@
+id: OOC-006
+category: noise
+tags: [out-of-corpus, weather]
+adversarial: {type: noise}
+alert: |
+  Severe thunderstorm warning in effect until 9 PM for the county. Expect heavy rain and gusts up to 50 mph.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

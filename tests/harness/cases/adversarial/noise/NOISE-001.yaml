@@ -1,0 +1,16 @@
+id: NOISE-001
+category: noise
+tags: [truncated]
+adversarial: {type: noise}
+alert: |
+  Multiple file servers showing thousands of file modifications per min
+expect:
+  severity_in: [high, critical, medium]
+  techniques_any: [T1486]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "alert cut off mid-sentence; checks that partial evidence still triages"

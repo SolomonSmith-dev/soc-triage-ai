@@ -1,0 +1,16 @@
+id: EXEC-004
+category: execution
+tags: [js-dropper]
+adversarial: null
+alert: |
+  wscript.exe executed a .js file named 'invoice_details.js' from the user's Downloads folder. The file was received as an email attachment inside a ZIP archive.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1059, T1204]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "script dropper from ZIP"

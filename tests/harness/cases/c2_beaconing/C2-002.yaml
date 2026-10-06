@@ -1,0 +1,16 @@
+id: C2-002
+category: c2_beaconing
+tags: [beacon]
+adversarial: null
+alert: |
+  Host WKSTN-155 made 1,440 HTTPS connections in 24 hours to 203.0.113.140 at 60 second intervals with jitter under 3 percent. Payload size constant at 312 bytes.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1071]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_2, network_anomalies_3, network_anomalies_4, network_anomalies_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "periodic beacon"

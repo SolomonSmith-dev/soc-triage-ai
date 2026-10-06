@@ -1,0 +1,16 @@
+id: CRED-003
+category: credential_access
+tags: [sam-hive]
+adversarial: null
+alert: |
+  Process 'reg.exe' saved HKLM\SAM and HKLM\SYSTEM hives to C:\Temp on SRV-APP-04 by user svc_deploy. Files were then zipped.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1003]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_1, mitre_credential_access_lateral_2, log_analysis_windows_16]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "SAM hive export"

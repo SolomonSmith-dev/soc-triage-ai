@@ -1,0 +1,16 @@
+id: RANSOM-006
+category: ransomware
+tags: [exfiltration, double-extortion]
+adversarial: null
+alert: |
+  Host DB-03 uploaded 40 GB to a file-sharing service over 3 hours using rclone, outside business hours. Same host later showed service stops for backup agents.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1567, T1486]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6, network_anomalies_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "exfiltration staging"

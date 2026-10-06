@@ -1,0 +1,16 @@
+id: OOC-009
+category: noise
+tags: [out-of-corpus, it-ops]
+adversarial: {type: noise}
+alert: |
+  Disk usage on /var/lib/postgresql is at 91 percent. Consider expanding the volume or archiving old partitions.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

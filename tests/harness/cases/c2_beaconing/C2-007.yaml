@@ -1,0 +1,16 @@
+id: C2-007
+category: c2_beaconing
+tags: [proxy, dmz]
+adversarial: null
+alert: |
+  A web server in the DMZ opened an outbound SOCKS connection to 198.51.100.200 on port 443 that has stayed open for 18 hours, transferring 6 GB inbound.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1090, T1071]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_2, network_anomalies_3, network_anomalies_4, network_anomalies_10, network_anomalies_8]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "long-lived outbound tunnel from DMZ"

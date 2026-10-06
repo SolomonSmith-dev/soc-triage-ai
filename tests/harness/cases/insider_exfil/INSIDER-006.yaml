@@ -1,0 +1,15 @@
+id: INSIDER-006
+category: insider_exfil
+tags: [routine]
+adversarial: null
+alert: |
+  Finance analyst exported a quarterly report (60 rows) from the BI tool at 10:15 on a Tuesday, matching their normal weekly routine. DLP did not trigger.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "routine export"

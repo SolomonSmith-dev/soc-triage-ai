@@ -1,0 +1,15 @@
+id: BEN-007
+category: adversarial
+tags: [benign-lookalike, routine-upload]
+adversarial: {type: benign_lookalike}
+alert: |
+  Weekly report job on SRV-RPT-01 uploaded a 1.2 GB archive to the company's approved S3 bucket at 02:00, same as the last 52 weeks.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_7, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "routine large upload"

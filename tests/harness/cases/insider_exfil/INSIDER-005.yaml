@@ -1,0 +1,16 @@
+id: INSIDER-005
+category: insider_exfil
+tags: [pip, usb]
+adversarial: null
+alert: |
+  Employee on a performance improvement plan printed 300 pages of the customer contract folder and copied the same folder to a USB drive. Badge records show a late-night visit to the office.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1530]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "life-event risk with media copy"

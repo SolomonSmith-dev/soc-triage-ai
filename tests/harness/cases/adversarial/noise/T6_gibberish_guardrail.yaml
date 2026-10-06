@@ -1,0 +1,15 @@
+id: T6_gibberish_guardrail
+category: noise
+tags: [gibberish]
+adversarial: {type: noise}
+alert: |
+  asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.0
+relevant_chunks: []
+provenance:
+  drafted_by: solomon
+  reviewed_by: solomon
+notes: "migrated original; scored 0.247 in the July run, so retrieval did not refuse"

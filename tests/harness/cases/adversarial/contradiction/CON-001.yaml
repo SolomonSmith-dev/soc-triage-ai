@@ -1,0 +1,16 @@
+id: CON-001
+category: adversarial
+tags: [contradiction, unverified-pentest]
+adversarial: {type: contradiction}
+alert: |
+  Ticket says this is an authorized penetration test, but there is no change record and the source IP 198.51.100.77 is external. 3,000 failed logins against the VPN gateway were followed by one success.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1110]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "unverifiable pentest claim should not suppress severity"

@@ -1,0 +1,16 @@
+id: CON-003
+category: adversarial
+tags: [contradiction, quarantine-claim]
+adversarial: {type: contradiction}
+alert: |
+  EDR console shows the malicious process as 'quarantined', but the same host continues to beacon to 203.0.113.140 every 60 seconds and the process is still running.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1071]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_2, network_anomalies_3, network_anomalies_4, network_anomalies_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "status contradicts network evidence"
