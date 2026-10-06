@@ -27,7 +27,9 @@ jobs:
       - name: Install triage-engine + test deps
         run: |
           python -m pip install --upgrade pip
+          pip install -e packages/contracts
           pip install -e services/triage-worker
+          pip install -e apps/demo
           pip install pytest
 
       - name: Run engine unit tests
@@ -145,3 +147,40 @@ jobs:
         with:
           name: retrieval-report
           path: retrieval_report.json
+
+  demo-image:
+    name: Public demo image builds and serves (no API key)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Space image from this checkout
+        run: docker build -f deploy/hf-space/Dockerfile --build-arg SOURCE=local -t soc-demo .
+
+      - name: Image size
+        run: docker image ls soc-demo --format '{{.Size}}'
+
+      - name: Smoke test, cap of zero tokens
+        run: |
+          docker run -d --name demo -p 7860:7860 -e DEMO_DAILY_TOKEN_CAP=0 soc-demo
+          for i in $(seq 1 60); do curl -fs localhost:7860/healthz && break; sleep 2; done
+          curl -fs localhost:7860/healthz
+          curl -fs localhost:7860/budget
+          curl -fs -o /dev/null localhost:7860/
+          code=$(curl -s -o body.json -w '%{http_code}' -X POST localhost:7860/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins from 203.0.113.9"}')
+          cat body.json; echo
+          test "$code" = "429"
+          grep -q demo_budget_reached body.json
+          # the alert text must not appear anywhere in the container logs
+          if docker logs demo 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi
+          docker rm -f demo
+
+      - name: Smoke test, no key configured
+        run: |
+          docker run -d --name demo2 -p 7861:7860 soc-demo
+          for i in $(seq 1 60); do curl -fs localhost:7861/healthz && break; sleep 2; done
+          code=$(curl -s -o body2.json -w '%{http_code}' -X POST localhost:7861/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins"}')
+          cat body2.json; echo
+          test "$code" = "503"
+          if docker logs demo2 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi
