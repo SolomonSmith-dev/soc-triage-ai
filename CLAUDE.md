@@ -1,4 +1,4 @@
-<!-- LifeOS-status: MAINTENANCE 2026-07-09 -->
+<!-- LifeOS-status: SHIPPED 2026-10-06. Open: record the live harness run, deploy the HF Space. -->
 
 # CLAUDE.md: soc-triage-ai
 
@@ -10,13 +10,13 @@ Operating contract for any Claude session opened inside `~/Projects/soc-triage-a
 
 This is portfolio work targeting **AI/ML engineering and security roles**. Code quality, model card discipline, and evaluation rigor matter more than feature count. Every decision should make the GitHub repo look more credible to a hiring manager who skims for thirty seconds.
 
-Current phase: mid Phase 2 (v2-platform branch). Monorepo migration in progress, `apps/api`, `apps/web`, `apps/dev-console`, `packages/contracts`.
+Current phase: portfolio-complete, pending two manual steps (live harness record, HF Space deploy). Shipped scope: `services/triage-worker` engine, `packages/contracts`, `apps/api`, `apps/dev-console`, `apps/demo` (public demo mode), and the 100-case harness in `tests/harness/`. Deferred by ADR 0001 (`docs/decisions/`): Next.js, Celery, OpenTelemetry, Terraform, pgvector, intel-sync.
 
 ## Required reads
 
 1. `README.md` for architecture and the six-stage pipeline
 2. `model_card.md` for capabilities, limits, and known failure modes
-3. `tests/harness_results.json` for the current reliability baseline before claiming a regression or improvement
+3. `tests/harness/RESULTS.md`, `retrieval_results.json`, `harness_results.json` and `baseline.json` for the current reliability baseline before claiming a regression or improvement
 4. `packages/contracts/` for the JSON schema, this is the API contract, not documentation
 
 ## The six-stage pipeline
@@ -36,7 +36,7 @@ If a change touches stage 3 or stage 5, you are changing the safety contract. Fl
 |---|---|
 | The schema in `packages/contracts/` is the source of truth. Update it before code that produces or consumes it. | Drift between schema and producers breaks downstream evaluation silently. |
 | Refusal mode is a feature, not a bug. If retrieval returns nothing above threshold, the system must refuse. | A SOC tool that hallucinates triage is worse than one that says "manual review". |
-| Every change to the prompt or retrieval logic requires re-running `tests/harness_results.json`. | Reliability claims in the model card must match the harness, or the model card is fraud. |
+| Every change to the prompt or retrieval logic requires a fresh live harness run and re-recorded cassettes. CI fails on a stale cassette. | Reliability claims in the model card must match the harness, or the model card is fraud. |
 | `model_card.md` is not marketing. It documents real limits including failure cases. | The harness must reproduce the limits documented in the card. |
 | No raw `print()` in production paths. Use structured logging. | The dev console reads structured logs to render observability. |
 
@@ -56,8 +56,8 @@ No em dashes.
 - Python 3.11+ (check `pyproject.toml`), `pip install -r requirements.txt` or `uv`
 - LLM: Claude Sonnet 4.5 via `ANTHROPIC_API_KEY`
 - Embeddings: sentence-transformers (local, no network at inference)
-- UI: Streamlit for now, migrating to a dedicated `apps/web`
-- Tests: `pytest`, reliability harness at `tests/harness.py`
+- UI: Streamlit (`apps/dev-console`, `apps/demo`). `apps/web` is deferred.
+- Tests: `pytest tests/unit` runs offline with no network and no LLM calls. Harness: `python -m tests.harness.test_harness --replay` (offline) or `--record` (live, capped at 5 USD).
 
 ## Secrets
 
@@ -69,10 +69,10 @@ No em dashes.
 
 Before claiming the model "improved":
 
-1. Run the full 7-case harness, store output
-2. Diff against the prior `tests/harness_results.json`
-3. Report pass rate, severity accuracy, escalation accuracy, retrieval count, latency
-4. Update the model card if any documented limit changed
+1. Run the full 100-case harness live (`--record`), store output
+2. Diff against `tests/harness/baseline.json` (`--update-baseline` prints the diff)
+3. Report standard and adversarial pass rate, severity accuracy, MITRE top-1 and any-match, refusal precision and recall, injection resistance, schema-failure rate, latency, cost
+4. Update `model_card.md` if any documented limit changed. `tests/unit/test_model_card.py` fails when the card and the JSON disagree
 
 No claim about reliability without numbers.
 
