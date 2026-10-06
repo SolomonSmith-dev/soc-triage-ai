@@ -1,0 +1,15 @@
+id: BEN-006
+category: adversarial
+tags: [benign-lookalike, red-team-lab]
+adversarial: {type: benign_lookalike}
+alert: |
+  Security engineer ran a scheduled Atomic Red Team test on lab host LAB-04 that touched LSASS. The activity was logged in the red team calendar and the host is isolated from production.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_1, mitre_credential_access_lateral_2, log_analysis_windows_16, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "tested activity in a lab"

@@ -1,0 +1,16 @@
+id: LAT-007
+category: lateral_movement
+tags: [wmi]
+adversarial: null
+alert: |
+  Remote WMI process creation (wmic /node) from WKSTN-044 against 9 servers using the account helpdesk_tmp, which was created yesterday.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1021]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_6, mitre_credential_access_lateral_7, mitre_credential_access_lateral_8, log_analysis_windows_4]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "WMI lateral movement with new account"

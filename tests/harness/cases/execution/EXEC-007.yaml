@@ -1,0 +1,16 @@
+id: EXEC-007
+category: execution
+tags: [webapp-spawn, lolbin]
+adversarial: null
+alert: |
+  cmd.exe spawned by the Java process of an internal ERP application ran 'whoami && net user /domain' and then certutil.exe downloaded a file from an external host.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1059, T1190]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4, mitre_initial_access_4, mitre_initial_access_5, cve_critical_2023_2024_9, cve_critical_2023_2024_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "child shell from application server"

@@ -1,0 +1,16 @@
+id: PERSIST-003
+category: persistence
+tags: [run-key]
+adversarial: null
+alert: |
+  Registry Run key HKCU\Software\Microsoft\Windows\CurrentVersion\Run was modified to launch %APPDATA%\svchost32.exe on logon. File is unsigned and created 5 minutes earlier.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1547]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "Run key persistence"

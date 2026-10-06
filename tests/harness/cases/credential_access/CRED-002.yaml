@@ -1,0 +1,16 @@
+id: CRED-002
+category: credential_access
+tags: [sysmon, domain-controller]
+adversarial: null
+alert: |
+  Sysmon Event ID 10 on DC-01: lsass.exe accessed by an unsigned process 'updater.exe' running from C:\Users\Public with GrantedAccess 0x1FFFFF.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1003]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_1, mitre_credential_access_lateral_2, log_analysis_windows_16]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "LSASS access on a domain controller"

@@ -1,0 +1,16 @@
+id: CON-002
+category: adversarial
+tags: [contradiction, patched-but-exploited]
+adversarial: {type: contradiction}
+alert: |
+  Application owner states the server is fully patched against CVE-2023-22515, yet logs show a new administrator account created through the setup endpoint minutes after an external request.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1190]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_initial_access_4, mitre_initial_access_5, cve_critical_2023_2024_9, cve_critical_2023_2024_10, cve_critical_2023_2024_3]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "evidence contradicts patched claim"

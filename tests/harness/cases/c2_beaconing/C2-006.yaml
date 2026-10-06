@@ -1,0 +1,15 @@
+id: C2-006
+category: c2_beaconing
+tags: [authorized-scan]
+adversarial: null
+alert: |
+  Authorized vulnerability scanner 10.0.9.5 completed its weekly scan of the server VLAN. 12,000 connection attempts recorded; scanner is listed in the approved asset register.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_5, network_anomalies_6, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "authorized scanner"

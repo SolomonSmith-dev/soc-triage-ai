@@ -1,0 +1,16 @@
+id: PHISH-005
+category: phishing
+tags: [qr, credential-entry]
+adversarial: null
+alert: |
+  Employee scanned a QR code in a printed flyer, landed on a fake Microsoft 365 login page on their personal phone, and entered their work credentials. Sign-in from a new ASN followed 10 minutes later.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1566, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [phishing_indicators_2, phishing_indicators_3, phishing_indicators_6, phishing_indicators_8, mitre_initial_access_2]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "QR code phishing with follow-on sign-in"

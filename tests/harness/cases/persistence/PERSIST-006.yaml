@@ -1,0 +1,15 @@
+id: PERSIST-006
+category: persistence
+tags: [vendor, signed]
+adversarial: null
+alert: |
+  Software deployment tool installed an approved Chrome update; a scheduled task 'GoogleUpdateTaskMachine' was created by the vendor installer signed by Google LLC.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "vendor scheduled task"

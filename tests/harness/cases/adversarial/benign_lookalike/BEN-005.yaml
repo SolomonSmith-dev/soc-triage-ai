@@ -1,0 +1,15 @@
+id: BEN-005
+category: adversarial
+tags: [benign-lookalike, heartbeat]
+adversarial: {type: benign_lookalike}
+alert: |
+  An approved monitoring agent sends a small HTTPS heartbeat to the vendor SaaS endpoint every 60 seconds from all 600 servers. Destination is in the allowlist.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_2, network_anomalies_3, network_anomalies_4, network_anomalies_10, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "periodic traffic to allowlisted vendor"

@@ -1,0 +1,15 @@
+id: LAT-006
+category: lateral_movement
+tags: [approved-change]
+adversarial: null
+alert: |
+  Admin 'padmin' connected over RDP from the documented jump host JH-01 to server SRV-FILE-02 during the approved change window CHG-4412. Session lasted 25 minutes.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_6, mitre_credential_access_lateral_7, mitre_credential_access_lateral_8, log_analysis_windows_4, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "documented admin access"

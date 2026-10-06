@@ -1,0 +1,16 @@
+id: NOISE-002
+category: noise
+tags: [log-dump, noisy]
+adversarial: {type: noise}
+alert: |
+  2026-10-02T03:14:07Z kern: eth0 link up | 2026-10-02T03:14:09Z sshd[2211]: Failed password for root from 203.0.113.9 port 51122 ssh2 | 2026-10-02T03:14:10Z sshd[2211]: Failed password for root from 203.0.113.9 port 51124 ssh2 | cron[301]: (root) CMD (run-parts /etc/cron.hourly) | 2026-10-02T03:14:11Z sshd[2211]: Failed password for root from 203.0.113.9 port 51126 ssh2 | ntpd[88]: time sync ok
+expect:
+  severity_in: [high, medium, low]
+  techniques_any: [T1110]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "real brute force buried in unrelated log lines"

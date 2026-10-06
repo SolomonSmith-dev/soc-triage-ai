@@ -1,0 +1,16 @@
+id: PERSIST-002
+category: persistence
+tags: [scheduled-task]
+adversarial: null
+alert: |
+  schtasks.exe created a task named 'WindowsUpdateCheck' running as SYSTEM, pointing to C:\Users\Public\upd.ps1, created by a non-admin user on WKSTN-090.
+expect:
+  severity_in: [high, critical]
+  techniques_any: [T1053]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "suspicious scheduled task"

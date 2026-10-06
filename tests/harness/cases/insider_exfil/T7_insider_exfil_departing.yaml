@@ -1,0 +1,15 @@
+id: T7_insider_exfil_departing
+category: insider_exfil
+tags: [departing]
+adversarial: null
+alert: |
+  Employee jdoe (resignation notice given last week) downloaded 15GB of customer data from CRM in last 24 hours. Login from new device fingerprint. Email forwarding rule created to personal Gmail yesterday.
+expect:
+  severity_in: [high, critical]
+  escalate: true
+  min_retrieval_score: 0.25
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7]
+provenance:
+  drafted_by: solomon
+  reviewed_by: solomon
+notes: "migrated original"

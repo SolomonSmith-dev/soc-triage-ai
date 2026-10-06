@@ -1,0 +1,15 @@
+id: BEN-003
+category: adversarial
+tags: [benign-lookalike, bulk-reset]
+adversarial: {type: benign_lookalike}
+alert: |
+  Helpdesk reset passwords for 85 accounts after the new password policy rollout. 4724 events recorded from helpdesk accounts during business hours with approved ticket HD-9921.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [log_analysis_windows_8, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "approved bulk password reset"

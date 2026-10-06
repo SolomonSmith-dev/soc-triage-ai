@@ -1,0 +1,16 @@
+id: PHISH-003
+category: phishing
+tags: [macro, powershell]
+adversarial: null
+alert: |
+  Accounts Payable user opened invoice_Q3.docm from an external sender. Process tree shows WINWORD.EXE spawning powershell.exe with a base64 encoded command. Outbound connection to 203.0.113.77 followed.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1566, T1204, T1059]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [phishing_indicators_3, phishing_indicators_4, phishing_indicators_8, mitre_execution_persistence_3]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "macro attachment to execution"

@@ -1,0 +1,16 @@
+id: C2-005
+category: c2_beaconing
+tags: [tor]
+adversarial: null
+alert: |
+  Outbound connections from a finance workstation to a known Tor entry node every 30 minutes for the past day. User-Agent string is python-requests/2.31.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1071, T1090]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [network_anomalies_8, network_anomalies_9, network_anomalies_10]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "Tor use plus scripted user agent"

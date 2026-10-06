@@ -1,0 +1,16 @@
+id: LAT-004
+category: lateral_movement
+tags: [pass-the-hash]
+adversarial: null
+alert: |
+  Event ID 4624 type 9 logon followed by network logons from the same account to 12 hosts within 8 minutes. Source host is a developer laptop.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1021, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_6, mitre_credential_access_lateral_7, mitre_credential_access_lateral_8, log_analysis_windows_4]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "pass-the-hash pattern"

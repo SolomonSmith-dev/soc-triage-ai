@@ -1,0 +1,16 @@
+id: PERSIST-005
+category: persistence
+tags: [linux, cron, ssh-key]
+adversarial: null
+alert: |
+  A new SSH key was appended to /root/.ssh/authorized_keys on srv-db-03 and a cron job running every 5 minutes was added to /etc/cron.d by user www-data.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1053, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [log_analysis_linux_15, log_analysis_linux_7, mitre_execution_persistence_5, mitre_execution_persistence_6, mitre_execution_persistence_7, mitre_execution_persistence_8]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "Linux persistence pair"

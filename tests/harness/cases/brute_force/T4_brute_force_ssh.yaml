@@ -1,0 +1,16 @@
+id: T4_brute_force_ssh
+category: brute_force
+tags: [ssh, tor]
+adversarial: null
+alert: |
+  5000 failed SSH authentication attempts in last 10 minutes against host srv-bastion-01 from source IP 185.220.101.45 (known Tor exit). No successful authentications observed yet.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1110]
+  escalate: true
+  min_retrieval_score: 0.25
+relevant_chunks: [mitre_credential_access_lateral_3, mitre_credential_access_lateral_4, log_analysis_linux_5, log_analysis_windows_5, log_analysis_windows_6]
+provenance:
+  drafted_by: solomon
+  reviewed_by: solomon
+notes: "migrated original"

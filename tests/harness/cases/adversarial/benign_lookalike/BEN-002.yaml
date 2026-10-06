@@ -1,0 +1,15 @@
+id: BEN-002
+category: adversarial
+tags: [benign-lookalike, sccm]
+adversarial: {type: benign_lookalike}
+alert: |
+  SCCM deployed Patch Tuesday updates: powershell.exe -enc was executed by the CCMExec service on 400 managed workstations at 03:00 with a signed script.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_execution_persistence_1, mitre_execution_persistence_2, mitre_execution_persistence_3, mitre_execution_persistence_4, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "management tool using encoded commands"

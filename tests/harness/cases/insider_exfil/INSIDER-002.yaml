@@ -1,0 +1,16 @@
+id: INSIDER-002
+category: insider_exfil
+tags: [scope-violation]
+adversarial: null
+alert: |
+  Contractor account c-wells downloaded 4,200 files from a SharePoint site outside their project scope in 2 hours. Account was created 6 weeks ago.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1530, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "contractor over-collection"

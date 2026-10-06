@@ -1,0 +1,16 @@
+id: LAT-005
+category: lateral_movement
+tags: [winrm]
+adversarial: null
+alert: |
+  WinRM sessions from SRV-APP-04 to three domain controllers by a standard user account. Sessions opened and closed within 1 minute.
+expect:
+  severity_in: [high, medium]
+  techniques_any: [T1021]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_6, mitre_credential_access_lateral_7, mitre_credential_access_lateral_8, log_analysis_windows_4]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "WinRM to DCs by standard user"

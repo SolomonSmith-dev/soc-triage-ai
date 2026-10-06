@@ -1,0 +1,16 @@
+id: RANSOM-005
+category: ransomware
+tags: [blocked]
+adversarial: null
+alert: |
+  EDR blocked execution of a binary matching known ransomware family on host SALES-07 before any file was modified. The binary was dropped by a user from a downloaded ZIP archive.
+expect:
+  severity_in: [medium, high]
+  techniques_any: [T1486]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "blocked before encryption"

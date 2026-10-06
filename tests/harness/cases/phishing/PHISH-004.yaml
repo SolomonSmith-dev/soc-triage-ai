@@ -1,0 +1,16 @@
+id: PHISH-004
+category: phishing
+tags: [oauth]
+adversarial: null
+alert: |
+  User clicked a link in an email and granted OAuth consent to an unrecognized app named 'DocuView Pro' requesting Mail.Read and offline_access. App registered 2 days ago in a foreign tenant.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1566, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [phishing_indicators_2, phishing_indicators_3, phishing_indicators_6, phishing_indicators_8, mitre_initial_access_2]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "OAuth consent phishing"

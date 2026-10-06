@@ -1,0 +1,16 @@
+id: INSIDER-004
+category: insider_exfil
+tags: [privileged, mail-rule]
+adversarial: null
+alert: |
+  Sysadmin account adm_ross created a mailbox forwarding rule for the CFO mailbox to an external address and cleared the audit log entry afterward.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1114, T1078]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [insider_threat_2, insider_threat_3, insider_threat_4, insider_threat_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "privileged user mailbox access"

@@ -1,0 +1,16 @@
+id: PHISH-006
+category: phishing
+tags: [blocked]
+adversarial: null
+alert: |
+  Secure email gateway quarantined a message with a double-extension attachment (report.pdf.exe) from a spoofed sender. No recipient opened it. Message was blocked before delivery.
+expect:
+  severity_in: [low, informational]
+  techniques_any: [T1566]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [phishing_indicators_2, phishing_indicators_3, phishing_indicators_6, phishing_indicators_8, mitre_initial_access_2, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "blocked at gateway"

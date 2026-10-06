@@ -1,0 +1,16 @@
+id: OOC-001
+category: noise
+tags: [out-of-corpus, recipe]
+adversarial: {type: noise}
+alert: |
+  Sear the short ribs for 4 minutes per side, then deglaze with red wine and braise at 300F for three hours.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

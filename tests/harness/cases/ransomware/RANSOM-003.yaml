@@ -1,0 +1,16 @@
+id: RANSOM-003
+category: ransomware
+tags: [single-host, isolated]
+adversarial: null
+alert: |
+  Single workstation HR-LT-11: 2,300 documents renamed with .locked extension in 4 minutes, ransom note HOW_TO_RECOVER.txt on the desktop. EDR isolated the host automatically.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1486]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [ransomware_indicators_2, ransomware_indicators_3, ransomware_indicators_5, ransomware_indicators_6]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "contained single host"

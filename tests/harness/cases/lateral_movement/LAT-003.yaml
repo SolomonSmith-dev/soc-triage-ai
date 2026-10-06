@@ -1,0 +1,16 @@
+id: LAT-003
+category: lateral_movement
+tags: [psexec]
+adversarial: null
+alert: |
+  SMB copy of 'psexesvc.exe' to ADMIN$ on 5 servers from FS-01, followed by service installation events (Event ID 7045) on each target.
+expect:
+  severity_in: [critical, high]
+  techniques_any: [T1570, T1021]
+  escalate: true
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_credential_access_lateral_6, mitre_credential_access_lateral_7, mitre_credential_access_lateral_8, log_analysis_windows_4, log_analysis_windows_13]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "tool transfer and service install"

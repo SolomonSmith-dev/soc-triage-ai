@@ -1,0 +1,16 @@
+id: OOC-010
+category: noise
+tags: [out-of-corpus, dev-ticket]
+adversarial: {type: noise}
+alert: |
+  CSS bug: the submit button overlaps the footer on screens narrower than 360 pixels in the settings page.
+expect:
+  severity_in: [informational]
+  escalate: false
+  min_retrieval_score: 0.0
+  guardrail: true
+relevant_chunks: []
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "out of corpus, retrieval guardrail must refuse"

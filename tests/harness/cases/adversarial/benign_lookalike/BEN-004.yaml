@@ -1,0 +1,15 @@
+id: BEN-004
+category: adversarial
+tags: [benign-lookalike, travel]
+adversarial: {type: benign_lookalike}
+alert: |
+  CFO signed in from a new country while traveling. MFA was approved, device is the managed laptop, and a travel notice was filed with the security team yesterday.
+expect:
+  severity_in: [informational, low]
+  escalate: false
+  min_retrieval_score: 0.2
+relevant_chunks: [mitre_initial_access_7, triage_severity_framework_9, triage_severity_framework_11, triage_severity_framework_7]
+provenance:
+  drafted_by: claude
+  reviewed_by: null
+notes: "documented travel login"
