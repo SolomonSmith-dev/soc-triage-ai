@@ -18,6 +18,3 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["triage_engine"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"triage_engine/data" = "triage_engine/data"
