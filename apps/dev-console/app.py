@@ -474,7 +474,7 @@ def render_evaluation_tab(engine):
     if data is None:
         st.markdown(
             '<div class="empty">No harness results found. '
-            'Run <code>python -m tests.test_harness</code> from the CLI '
+            'Run <code>python -m tests.harness.test_harness</code> from the CLI '
             'or click "Run live" above.</div>',
             unsafe_allow_html=True,
         )
