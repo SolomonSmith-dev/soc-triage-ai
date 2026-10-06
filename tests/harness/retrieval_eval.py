@@ -8,6 +8,8 @@ Definitions
   should refuse:  case has no relevant chunks (nothing in the corpus applies)
   refuse at t:    top-1 cosine score < t (no chunk clears the guardrail)
   recall@k:       |relevant in top-k| / |relevant|, averaged over answerable queries
+                  (ceiling: the best possible value, since a query with more than k
+                  relevant chunks cannot reach 1.0)
   hit@k:          share of answerable queries with at least one relevant chunk in top-k
   MRR:            mean of 1 / rank of the first relevant chunk in the top-10 (0 if absent)
   refusal P/R:    positive class is "should refuse"
@@ -46,12 +48,13 @@ def metrics_from_raw(raw: dict, labels: list[dict], threshold: float = PIPELINE_
                      k: int = PIPELINE_K) -> dict:
     ans = [l for l in labels if not l["should_refuse"]]
     neg = [l for l in labels if l["should_refuse"]]
-    recalls, hits_k, rrs, rec_thr = [], [], [], []
+    recalls, hits_k, rrs, rec_thr, ceil = [], [], [], [], []
     for l in ans:
         ranked = raw[l["id"]]
         rel = set(l["relevant"])
         top = [cid for cid, _ in ranked[:k]]
         recalls.append(len(rel & set(top)) / len(rel))
+        ceil.append(min(len(rel), k) / len(rel))
         hits_k.append(1.0 if rel & set(top) else 0.0)
         rr = 0.0
         for i, (cid, _) in enumerate(ranked, 1):
@@ -72,6 +75,7 @@ def metrics_from_raw(raw: dict, labels: list[dict], threshold: float = PIPELINE_
         "threshold": threshold, "k": k,
         "answerable_queries": len(ans), "refusal_queries": len(neg),
         "recall_at_k": round(sum(recalls) / len(recalls), 3) if recalls else None,
+        "recall_at_k_ceiling": round(sum(ceil) / len(ceil), 3) if ceil else None,
         "recall_at_k_after_threshold": round(sum(rec_thr) / len(rec_thr), 3) if rec_thr else None,
         "hit_at_k": round(sum(hits_k) / len(hits_k), 3) if hits_k else None,
         "mrr": round(sum(rrs) / len(rrs), 3) if rrs else None,

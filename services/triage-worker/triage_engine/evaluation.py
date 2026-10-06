@@ -7,6 +7,7 @@ Two modes:
 Metrics derivation is shared between both paths.
 """
 import json
+import re
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -35,14 +36,18 @@ def load_harness_results(
     return {"results": data}
 
 
-def run_harness_live(triage_engine) -> Dict:
-    """Execute all TEST_CASES against a live triage engine.
+def run_harness_live(triage_engine, cases: Optional[List[Dict]] = None) -> Dict:
+    """Execute cases against a live triage engine.
 
+    Defaults to the 7 original cases (ids T1_ .. T7_) so one click in the UI
+    costs 7 API calls, not 100. Pass `cases` to run any other subset.
     Returns the same shape as load_harness_results: {"results": [...]}.
     Does not write to disk.
     """
+    if cases is None:
+        cases = [c for c in TEST_CASES if re.match(r"T\d+_", c["id"])]
     results: List[Dict] = []
-    for case in TEST_CASES:
+    for case in cases:
         case_start = time.time()
         try:
             result = triage_engine.triage(case["alert"])
