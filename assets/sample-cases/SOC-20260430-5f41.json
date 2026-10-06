@@ -1,0 +1,86 @@
+{
+  "case_id": "SOC-20260430-5f41",
+  "timestamp": "2026-04-30T02:15:10+00:00",
+  "alert_raw": "Multiple file servers showing thousands of file modifications per minute. Files renamed with .lockbit extension. README.txt ransom notes appearing in every directory. Volume Shadow Copies deleted via vssadmin 30 minutes ago.",
+  "observables": {
+    "ipv4": [],
+    "email": [],
+    "url": [],
+    "domain": [],
+    "md5": [],
+    "sha1": [],
+    "sha256": [],
+    "registry_path": [],
+    "process": [],
+    "filename": [
+      "README.txt"
+    ],
+    "hostname": [],
+    "username": []
+  },
+  "triage": {
+    "severity": "critical",
+    "confidence": "high",
+    "mitre_techniques": [
+      "T1486",
+      "T1490"
+    ],
+    "summary": "Active LockBit ransomware encryption in progress across multiple file servers with Volume Shadow Copy deletion and ransom note deployment.",
+    "recommended_actions": [
+      "Immediately isolate affected file servers from the network to prevent further encryption spread",
+      "Identify and block source of encryption activity including any SMB connections from unusual sources",
+      "Preserve forensic evidence and memory dumps before powering down affected systems",
+      "Activate incident response plan and engage ransomware response team",
+      "Verify backup integrity and isolation from production environment"
+    ],
+    "escalate": true,
+    "reasoning": "This alert exhibits multiple definitive indicators of active ransomware encryption: thousands of files per minute being modified, .lockbit extension indicating LockBit family, ransom notes in every directory, and Volume Shadow Copy deletion to prevent recovery. These match exact patterns from threat intelligence for encryption phase indicators and pre-encryption defense evasion. Immediate containment is critical to prevent further data loss."
+  },
+  "evidence": {
+    "chunks_retrieved": [
+      {
+        "chunk_id": "ransomware_indicators_3",
+        "source": "ransomware_indicators.md",
+        "score": 0.709,
+        "text": "## Encryption Phase Indicators\n- High volume of file modifications in short time window (thousands of files per minute per host)\n- File extension changes to ransomware-specific patterns: .lockbit, .blackcat, .akira, .clop\n- Ransom note files appearing in every directory: README.txt, HOW_TO_DECRYPT.txt, DECRYPT_INFO.html\n- CPU spikes on file servers and workstations simultaneously\n- SMB write activity from unusual sources",
+        "cited": true
+      },
+      {
+        "chunk_id": "ransomware_indicators_4",
+        "source": "ransomware_indicators.md",
+        "score": 0.502,
+        "text": "## Active Ransomware Families 2024-2025\n- LockBit 3.0/Black: most prolific. Uses StealBit for exfiltration. Targets ESXi servers with Linux variant.\n- BlackCat/ALPHV: written in Rust. Triple extortion model. Disrupted by FBI February 2024 but resurged.\n- Akira: emerged 2023. Hybrid C++/Rust. Targets VPN appliances for initial access.\n- Cl0p: known for mass exploitation campaigns including MOVEit and GoAnywhere.\n- Play: targets Linux ESXi, uses intermittent encryption for speed.\n- Royal: rebrand of Conti members. Uses partial file encryption.",
+        "cited": true
+      },
+      {
+        "chunk_id": "ransomware_indicators_2",
+        "source": "ransomware_indicators.md",
+        "score": 0.487,
+        "text": "## Pre-Encryption Indicators\n- Mass enumeration of file shares (SMB scans, share listing)\n- Volume Shadow Copy deletion via vssadmin delete shadows or wmic shadowcopy delete\n- Backup system access attempts: Veeam, Commvault, Rubrik service account anomalies\n- Disabling of security tools: Windows Defender, EDR agents, antivirus services\n- Group Policy modifications to disable defenses domain-wide\n- RDP enabling on systems where it was previously disabled",
+        "cited": true
+      },
+      {
+        "chunk_id": "ransomware_indicators_1",
+        "source": "ransomware_indicators.md",
+        "score": 0.465,
+        "text": "Ransomware attacks have evolved into multi-stage operations with reconnaissance, exfiltration, and encryption phases. Modern ransomware operators often spend 7-30 days in the environment before deploying encryption.",
+        "cited": true
+      }
+    ],
+    "avg_retrieval_score": 0.541,
+    "sources_cited": [
+      "ransomware_indicators.md"
+    ]
+  },
+  "uncertainty_mode": "actionable",
+  "guardrail_triggered": false,
+  "analyst_overrides": [],
+  "version": {
+    "model": "claude-sonnet-4-5",
+    "embeddings": "all-MiniLM-L6-v2",
+    "corpus_chunks": 109,
+    "prompt_version": "1.0",
+    "top_k": 4,
+    "min_similarity": 0.2
+  }
+}

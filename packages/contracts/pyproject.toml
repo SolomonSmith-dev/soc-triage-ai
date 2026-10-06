@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "soc-contracts"
+version = "0.2.0"
+description = "Wire-format contracts for SOC Triage Copilot. Pydantic models exported as JSON Schema for cross-language consumption."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.7.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["soc_contracts"]
