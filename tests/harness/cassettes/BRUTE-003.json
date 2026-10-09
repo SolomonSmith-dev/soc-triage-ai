@@ -1,0 +1,13 @@
+{
+  "case_id": "BRUTE-003",
+  "prompt_sha256": "4b48b30d6a728a18cf00ed02dd745c32634e123322c15388798d293676831dc4",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\"],\n  \"summary\": \"Successful SSH brute force attack against user 'deploy' on srv-web-02 from IP 203.0.113.9 after 800 failed login attempts using password authentication.\",\n  \"recommended_actions\": [\n    \"Immediately disable or reset credentials for user 'deploy' on srv-web-02\",\n    \"Block source IP 203.0.113.9 at firewall and investigate for additional compromised systems\",\n    \"Review all activity from 'deploy' account post-compromise for evidence of lateral movement or data exfiltration\",\n    \"Implement fail2ban or similar brute force protection and enforce MFA for SSH access\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches the high-priority pattern of failed SSH authentication followed by successful login from the same IP, indicating a successful brute force attack. The threat intelligence explicitly identifies 'multiple authentication failures followed by success' and 'high failed authentication count with successful login immediately following failures' as critical indicators of credential compromise requiring immediate response.\",\n  \"mitre_technique_names\": {\n    \"T1110\": \"Brute Force\"\n  }\n}\n```",
+  "usage": {
+    "input_tokens": 712,
+    "output_tokens": 304
+  },
+  "latency_seconds": 6.586,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:21Z"
+}

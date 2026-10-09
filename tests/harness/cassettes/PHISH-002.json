@@ -1,0 +1,13 @@
+{
+  "case_id": "PHISH-002",
+  "prompt_sha256": "abb130f3bc21506e73af17b89868749934d36b077faea63293e42c49674042bf",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1566\", \"T1566.002\"],\n  \"summary\": \"Phishing campaign with lookalike Microsoft domain delivered to multiple Finance users, attempting credential harvesting via mailbox quota verification pretext.\",\n  \"recommended_actions\": [\n    \"Block sender domain micros0ft-support.example at email gateway and DNS\",\n    \"Quarantine the message from all 4 recipients' mailboxes\",\n    \"Hunt for similar messages across the tenant using sender domain and subject patterns\",\n    \"Confirm no recipients clicked the link through proxy/email gateway logs\",\n    \"Review M365 audit logs for suspicious OAuth grants or authentication attempts from Finance users\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches phishing indicators from threat intelligence: lookalike domain using '0' instead of 'o' in 'microsoft', urgency manipulation with mailbox quota pretext, and targeted delivery to Finance department. The sender domain mismatch and multi-recipient delivery indicate an active phishing campaign requiring immediate containment and tenant-wide hunting.\",\n  \"confidence\": \"high\"\n}\n```",
+  "usage": {
+    "input_tokens": 905,
+    "output_tokens": 279
+  },
+  "latency_seconds": 7.429,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:36Z"
+}

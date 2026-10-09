@@ -1,0 +1,13 @@
+{
+  "case_id": "WEB-004",
+  "prompt_sha256": "1dddf51dcc3d93223be94c520671c7660a0c4e5a4ff5a44bd8c189d833de69a1",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1136\"],\n  \"summary\": \"Unauthenticated creation of administrator account on Confluence server matches CVE-2023-22515 exploitation pattern previously used by Storm-0062.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the affected Confluence server from the network to prevent further unauthorized access\",\n    \"Disable or delete the newly created 'sysadm2' administrator account and audit all administrative accounts for unauthorized additions\",\n    \"Review all REST API calls to /setup endpoints and examine logs for additional indicators of Storm-0062 activity\",\n    \"Apply security patches for CVE-2023-22515 if not already deployed and conduct full compromise assessment\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches the exact exploitation pattern for CVE-2023-22515, a critical Confluence vulnerability that allows unauthenticated administrator account creation. The threat intelligence indicates this vulnerability has been actively exploited by Storm-0062 threat actors, and the observed behavior (unauthenticated /setup/setupadministrator.action request followed by new admin account creation) is a direct indicator of compromise requiring immediate incident response.\",\n  \"mitre_techniques_context\": \"T1136 - Create Account, as adversary created unauthorized administrator account to establish persistent access\"\n}\n```",
+  "usage": {
+    "input_tokens": 714,
+    "output_tokens": 329
+  },
+  "latency_seconds": 8.117,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:07Z"
+}

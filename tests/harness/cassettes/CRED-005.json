@@ -1,0 +1,13 @@
+{
+  "case_id": "CRED-005",
+  "prompt_sha256": "eeb35cc4fba8bd3dfd0236ea862f2a214bf781d0f963c4effe3fff880bce00a7",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1003.003\", \"T1570\"],\n  \"summary\": \"Unauthorized ntdsutil.exe IFM snapshot creation on domain controller by non-approved account with staged output indicates potential NTDS credential theft.\",\n  \"recommended_actions\": [\n    \"Immediately isolate DC-02 from the network and identify the account that executed ntdsutil.exe\",\n    \"Review access logs for the staging share to identify who accessed the IFM snapshot files and confirm if ntds.dit was exfiltrated\",\n    \"Reset krbtgt account password twice and force password resets for all privileged accounts\",\n    \"Hunt for lateral movement indicators and additional credential dumping tools across the environment\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"The use of ntdsutil.exe to create an Install From Media (IFM) snapshot on a domain controller is a known method for extracting ntds.dit, which contains all Active Directory credentials including password hashes (T1003.003). The subsequent copying to a staging share suggests preparation for exfiltration or lateral tool transfer (T1570). Execution by an unauthorized account significantly elevates the threat.\"\n}\n```",
+  "usage": {
+    "input_tokens": 837,
+    "output_tokens": 295
+  },
+  "latency_seconds": 7.51,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:50Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "PHISH-005",
+  "prompt_sha256": "8973cafe61d32d02273ad990fc8ba203c0bf53ff7b29bc7fb04bad9bb104552a",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1566.002\", \"T1078\"],\n  \"summary\": \"Employee compromised work credentials via QR code phishing (quishing) leading to credential harvesting and subsequent unauthorized sign-in from new ASN.\",\n  \"recommended_actions\": [\n    \"Immediately revoke and reset the employee's credentials and terminate all active sessions\",\n    \"Review all account activity from the new ASN for unauthorized access or data exfiltration\",\n    \"Enforce MFA re-enrollment for the affected account and verify no additional authentication methods were added\",\n    \"Check for any OAuth consent grants, mailbox rules, or forwarding rules created during the unauthorized session\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This is a successful credential phishing attack using QR codes (quishing), matching T1566.002 Spearphishing Link indicators from threat intelligence. The subsequent sign-in from a new ASN within 10 minutes indicates T1078 Valid Accounts compromise, where the adversary is now using legitimate stolen credentials to access corporate resources. Requires immediate escalation for credential revocation and forensic review of post-compromise activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 864,
+    "output_tokens": 290
+  },
+  "latency_seconds": 8.044,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:45Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "T7_insider_exfil_departing",
+  "prompt_sha256": "053ef83382f3f21a94ee550425163df708ad09360b9b9ddb33160365d9c97a1e",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1078\", \"T1567\", \"T1114\"],\n  \"summary\": \"Departing employee jdoe exhibited multiple insider threat indicators including mass data download, new device usage, and email forwarding to personal account within week of resignation.\",\n  \"recommended_actions\": [\n    \"Immediately revoke jdoe's system access and disable accounts\",\n    \"Review email forwarding rule content and block/delete the rule to personal Gmail\",\n    \"Conduct forensic analysis of the 15GB CRM download to identify specific customer data accessed\",\n    \"Engage legal/HR for potential data theft investigation and preservation of evidence\",\n    \"Review access logs for any additional exfiltration methods (cloud storage, removable media)\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"Employee exhibits classic departing employee signals from threat intelligence: mass download of customer data (15GB from CRM) in final week after resignation, email forwarding to personal account, and new device usage. Multiple high-confidence indicators of potential data exfiltration require immediate containment and investigation. This matches documented behavioral patterns for insider data theft rather than compromised account.\"\n}\n```",
+  "usage": {
+    "input_tokens": 752,
+    "output_tokens": 288
+  },
+  "latency_seconds": 7.465,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:13Z"
+}

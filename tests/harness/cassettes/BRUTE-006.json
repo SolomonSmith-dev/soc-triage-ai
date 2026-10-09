@@ -1,0 +1,13 @@
+{
+  "case_id": "BRUTE-006",
+  "prompt_sha256": "c3bfb9638936711b40f00013bedd84fffb8ab530258965c9ddb23dd5a3f20ea0",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\", \"T1021.001\", \"T1133\"],\n  \"summary\": \"Credential brute-force attack detected against internet-facing RDP gateway with 1,200 failed logons across 7 accounts from 3 IPs in 15 minutes, triggering account lockouts.\",\n  \"recommended_actions\": [\n    \"Block the 3 source IPs at perimeter firewall immediately\",\n    \"Review RDP-GW-01 logs for any successful Type 10 (RemoteInteractive) logons from these IPs following the failed attempts\",\n    \"Verify affected accounts are not compromised and coordinate password resets if any successful authentications occurred\",\n    \"Consider implementing rate limiting or geo-blocking on RDP-GW-01 if not already in place\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches credential brute-force patterns described in threat intelligence: high failed authentication count and authentication attempts across many accounts from single source (3 IPs). The attack targets an internet-facing RDP service (T1133 External Remote Services, T1021.001 RDP) with clear credential stuffing/brute-force behavior (T1110 implied by pattern). Account lockouts indicate sustained attack. Requires escalation to verify no successful compromises occurred and implement blocking.\"\n}\n```",
+  "usage": {
+    "input_tokens": 815,
+    "output_tokens": 336
+  },
+  "latency_seconds": 8.347,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:30Z"
+}

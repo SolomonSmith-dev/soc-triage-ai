@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-006",
+  "prompt_sha256": "3a505367413b5960170c6aa58c2d411579619b4b1d56046c8c2c0547fcc6b175",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1530\", \"T1567\", \"T1114\"],\n  \"summary\": \"Resigned employee exfiltrated 15GB of customer data from CRM and configured email forwarding to personal Gmail account, matching multiple departing employee threat indicators.\",\n  \"recommended_actions\": [\n    \"Immediately revoke all system access for the resigned employee\",\n    \"Disable the Gmail forwarding rule and review all emails forwarded to identify data exposure\",\n    \"Conduct forensic analysis of the 15GB CRM download to identify specific customer records exfiltrated\",\n    \"Review access logs for additional unauthorized data access or downloads\",\n    \"Notify legal and management teams for potential data theft investigation\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert exhibits multiple high-confidence departing employee threat indicators including mass data downloads, email forwarding to personal accounts, and timing aligned with resignation. The 15GB CRM download constitutes potential data theft requiring immediate containment and investigation. MITRE techniques T1530 (Data from Cloud Storage Object), T1567 (Exfiltration Over Web Service), and T1114 (Email Collection) apply based on CRM data extraction and Gmail forwarding rule creation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 762,
+    "output_tokens": 307
+  },
+  "latency_seconds": 6.779,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:57Z"
+}

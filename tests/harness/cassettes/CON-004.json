@@ -1,0 +1,13 @@
+{
+  "case_id": "CON-004",
+  "prompt_sha256": "13634b797f794e8513f75641bd213daa554885c06117bdfd48a11870d5cf47e9",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"medium\",\n  \"mitre_techniques\": [\"T1078\"],\n  \"summary\": \"Impossible travel detected for account jdoe with successful MFA authentication from US and hosting provider on different continent within 6 minutes, indicating potential credential compromise or MFA fatigue attack.\",\n  \"recommended_actions\": [\n    \"Disable account jdoe immediately and revoke all active sessions\",\n    \"Force password reset with MFA re-enrollment\",\n    \"Contact user through alternative verified channel to confirm legitimate travel and recent MFA approvals\",\n    \"Investigate source IP from hosting provider for additional suspicious activity\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches impossible travel indicators from the threat intelligence context with use of valid credentials (T1078). While the user claims to be traveling, the 6-minute timeframe between geographically distant logins is physically impossible, and the use of a hosting provider IP is suspicious. However, confidence is medium rather than high because both MFA prompts were approved, suggesting either MFA fatigue attack, compromised MFA device, or legitimate but unusual user behavior requiring investigation.\",\n  \"reasoning\": \"Alert matches impossible travel and login from new geography indicators with successful authentication using valid credentials (T1078). The 6-minute interval between US and another continent is physically impossible despite user's travel claim. MFA approval on both sessions suggests either credential compromise with MFA fatigue attack or stolen session token, warranting immediate escalation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 696,
+    "output_tokens": 346
+  },
+  "latency_seconds": 8.962,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:44Z"
+}

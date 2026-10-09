@@ -1,0 +1,13 @@
+{
+  "case_id": "T5_log4shell_unverified_patch_claim",
+  "prompt_sha256": "0414986b245e76ea3572d19f654850af8bbe23c29cd42a43bd4968fdc4415e14",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1190\"],\n  \"summary\": \"External actor attempted Log4Shell exploitation via JNDI injection string in HTTP User-Agent header against internal Java application.\",\n  \"recommended_actions\": [\n    \"Verify patching status of target Java application server against CVE-2021-44228 and related Log4j vulnerabilities\",\n    \"Block source IP at perimeter firewall and check for additional exploitation attempts from same source\",\n    \"Review application logs for child process spawning and outbound LDAP/RMI connections from the Java service\",\n    \"Confirm WAF successfully blocked the malicious request and no payload execution occurred\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches known Log4Shell exploitation indicators (JNDI string targeting LDAP) documented in the threat intelligence context. While the application is reportedly patched, the attempt represents active exploitation effort against a critical vulnerability and warrants verification of defensive posture and investigation for any bypass or related compromise activity. Maps to T1190 Exploit Public-Facing Application per threat intelligence guidance.\"\n}\n```",
+  "usage": {
+    "input_tokens": 802,
+    "output_tokens": 275
+  },
+  "latency_seconds": 7.282,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:00Z"
+}

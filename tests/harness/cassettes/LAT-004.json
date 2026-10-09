@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-004",
+  "prompt_sha256": "2171a82e76e58aaea7c899c05be0f7ca424c54b524e992efe2f95695906b6444",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"medium\",\n  \"mitre_techniques\": [\"T1078\"],\n  \"summary\": \"Type 9 NewCredentials logon followed by rapid lateral movement to 12 hosts in 8 minutes from developer laptop, consistent with credential abuse or compromised account activity.\",\n  \"recommended_actions\": [\n    \"Verify legitimacy of Type 9 logon (RunAs usage) with the developer account owner immediately\",\n    \"Identify the 12 target hosts and check for suspicious process execution or file access using logon ID correlation\",\n    \"Review recent activity on the developer laptop for signs of compromise (malware, suspicious processes, or authentication events)\",\n    \"Check if the accessed hosts are typical destinations for this user and within normal business workflow\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"Type 9 logons indicate use of explicit alternate credentials (RunAs), followed by rapid network access to 12 hosts within 8 minutes suggesting potential lateral movement. This pattern is abnormal for developer activity and may indicate credential theft or account compromise being leveraged for network reconnaissance or attack propagation.\",\n  \"mitre_techniques_reasoning\": \"T1078 (Valid Accounts) applies as the attacker appears to be using legitimate credentials to authenticate and move laterally across multiple systems.\"\n}\n```",
+  "usage": {
+    "input_tokens": 859,
+    "output_tokens": 310
+  },
+  "latency_seconds": 8.499,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:21Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-003",
+  "prompt_sha256": "2c0351964c30f796cbce6718c4d1fd8cf21fd27b556abeaf1dc14de3bb138e4a",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1071.004\", \"T1048.003\", \"T1568.002\"],\n  \"summary\": \"Suspected DNS tunneling from SRV-WEB-01 with 4,000 high-entropy queries per hour to single domain, consistent with data exfiltration or C2 communication.\",\n  \"recommended_actions\": [\n    \"Immediately capture full packet data for DNS queries to a1b2.example-tunnel.net for content analysis\",\n    \"Isolate SRV-WEB-01 from network and initiate endpoint forensics to identify potential malware or compromise\",\n    \"Block domain a1b2.example-tunnel.net at DNS and firewall level across the environment\",\n    \"Review recent file access and data movement on SRV-WEB-01 for evidence of exfiltration\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"Alert exhibits classic DNS tunneling indicators from threat intelligence: unusually long DNS query names (78 characters), high entropy content, very high query volume (4,000/hour) to a single domain. This matches documented exfiltration or C2 over DNS techniques. The volume and characteristics strongly suggest active data exfiltration or command and control activity requiring immediate investigation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 819,
+    "output_tokens": 320
+  },
+  "latency_seconds": 8.451,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:34Z"
+}

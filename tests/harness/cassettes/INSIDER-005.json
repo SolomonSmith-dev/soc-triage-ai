@@ -1,0 +1,13 @@
+{
+  "case_id": "INSIDER-005",
+  "prompt_sha256": "db91378e6bc4846f89c803e544dcfce127c6a6d88ba2a60066dbeafedf374df3",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1052\", \"T1074\"],\n  \"summary\": \"Employee on performance improvement plan engaged in mass printing and USB exfiltration of customer contracts during off-hours access, matching multiple high-risk insider threat indicators.\",\n  \"recommended_actions\": [\n    \"Immediately notify HR and legal team regarding potential data exfiltration by employee on PIP\",\n    \"Review badge access logs and security camera footage from the late-night office visit\",\n    \"Examine DLP logs for additional data transfers to personal devices or cloud storage\",\n    \"Inventory all documents in customer contract folder to assess exposure scope\",\n    \"Consider immediate restriction of employee system access pending investigation\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert combines multiple critical insider threat indicators from the intelligence context: employee on performance improvement plan (high-risk life event), mass downloads/printing of sensitive customer data, use of removable media (USB drive), and off-hours access patterns inconsistent with normal activity. The convergence of these behavioral indicators with a known high-risk employee status represents significant data exfiltration risk requiring immediate escalation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 727,
+    "output_tokens": 282
+  },
+  "latency_seconds": 7.26,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:12Z"
+}

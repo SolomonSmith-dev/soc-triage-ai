@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-010",
+  "prompt_sha256": "256bc189edf2075fc1e7ecba4048266783c3c6c75a5a712d64d22c66e13d1193",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1114.003\", \"T1070.001\"],\n  \"summary\": \"Admin account created external mailbox forwarding rule for CFO and deleted audit logs, indicating credential compromise and data exfiltration setup with anti-forensic activity.\",\n  \"recommended_actions\": [\n    \"Immediately disable the compromised admin account and reset credentials\",\n    \"Remove the malicious forwarding rule from CFO mailbox and review all mailbox rules tenant-wide\",\n    \"Review M365 audit logs for OAuth grants, additional forwarding rules, and lateral movement by this admin account\",\n    \"Contain the admin account and hunt for similar forwarding rules across high-value mailboxes\",\n    \"Investigate authentication logs to identify initial compromise vector and attacker infrastructure\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert shows clear malicious intent with email collection via forwarding rule (T1114.003) and indicator removal through audit log deletion (T1070.001). The targeting of a CFO mailbox by an admin account combined with anti-forensic activity indicates a business email compromise or insider threat scenario requiring immediate escalation and containment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 719,
+    "output_tokens": 291
+  },
+  "latency_seconds": 7.208,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:05Z"
+}

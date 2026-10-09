@@ -1,0 +1,13 @@
+{
+  "case_id": "CON-002",
+  "prompt_sha256": "e9c402c0cc11fcc1ac376bf5812c3a1b3000875ea0e8f9af64b1bd938b3f5297",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1190\"],\n  \"summary\": \"Suspected CVE-2023-22515 exploitation on Confluence server with new administrator account created via setup endpoint despite reported patching status.\",\n  \"recommended_actions\": [\n    \"Immediately disable the newly created administrator account and audit all recent account creations\",\n    \"Verify actual patch level of Confluence instance against CVE-2023-22515 remediation requirements\",\n    \"Review all REST API calls to /setup endpoints and correlate with external IP addresses for IOC extraction\",\n    \"Check for additional compromise indicators including web shells, unusual processes, and unauthorized configuration changes\",\n    \"Isolate the Confluence server from network if active exploitation is confirmed\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"Alert shows classic CVE-2023-22515 exploitation indicators: unauthorized admin account creation through setup endpoint following external request. This vulnerability allows unauthenticated attacker creation of admin accounts and has been actively exploited by Storm-0062. The contradiction between stated patch status and observed exploitation activity requires immediate investigation and escalation.\",\n  \"confidence_note\": \"High confidence due to specific IOCs matching known CVE-2023-22515 exploitation pattern, though patch status discrepancy needs verification\"\n}\n```",
+  "usage": {
+    "input_tokens": 742,
+    "output_tokens": 315
+  },
+  "latency_seconds": 8.017,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:42Z"
+}

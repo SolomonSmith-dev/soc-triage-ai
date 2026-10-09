@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-007",
+  "prompt_sha256": "efc1d343a5798eec3685d060b941749313667910b01a908225c3855b1b8e98b4",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1021.002\", \"T1078\"],\n  \"summary\": \"Suspicious lateral movement via WMI remote process creation from workstation WKSTN-044 to 9 servers using a newly-created helpdesk account.\",\n  \"recommended_actions\": [\n    \"Immediately disable the helpdesk_tmp account and investigate its creation event and usage history\",\n    \"Isolate WKSTN-044 from the network and perform forensic analysis for credential theft or compromise indicators\",\n    \"Review authentication logs and process execution on all 9 target servers for malicious activity or credential dumping\",\n    \"Identify who created the helpdesk_tmp account and verify legitimacy through IT/helpdesk management\",\n    \"Check for additional lateral movement attempts from WKSTN-044 or using the helpdesk_tmp account\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"WMI remote process creation matches T1021.002 lateral movement patterns (wmiexec-style abuse). A newly-created temporary account performing widespread lateral movement from a workstation to multiple servers is highly anomalous and suggests T1078 valid account abuse following potential compromise. This requires immediate investigation for potential breach activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 784,
+    "output_tokens": 311
+  },
+  "latency_seconds": 8.188,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:27Z"
+}

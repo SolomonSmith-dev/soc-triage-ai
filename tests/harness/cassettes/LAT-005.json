@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-005",
+  "prompt_sha256": "16d6120130f49458a1176ea148d0fa54753ee8e211be6146b2b5f462ccff102e",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1021.006\"],\n  \"summary\": \"Standard user account established WinRM sessions to multiple domain controllers from an application server, suspicious for lateral movement or credential access attempts.\",\n  \"recommended_actions\": [\"Identify the standard user account and verify legitimacy of administrative activity on domain controllers\", \"Review authentication logs on all three domain controllers for associated Event ID 4624 Type 3 logons and any subsequent credential access activity\", \"Check for signs of LSASS dumping (T1003.001) or NTDS extraction (T1003.003) on the targeted domain controllers during the session timeframe\", \"Isolate SRV-APP-04 if unauthorized activity is confirmed and reset credentials for the involved user account\"],\n  \"escalate\": true,\n  \"reasoning\": \"WinRM lateral movement from an application server to multiple domain controllers by a standard (non-administrative) user is highly abnormal and matches T1021.006 PowerShell remoting abuse patterns. The brief session duration and targeting of domain controllers suggests reconnaissance or credential theft preparation. This activity warrants immediate investigation for potential credential dumping or DCSync attacks.\"\n}\n```",
+  "usage": {
+    "input_tokens": 860,
+    "output_tokens": 284
+  },
+  "latency_seconds": 7.616,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:21Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-002",
+  "prompt_sha256": "d232e635be1db6cf0abd9b2aca6990db3dbcaaece0589156f9b2fde4f5febc18",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1071\"],\n  \"summary\": \"WKSTN-155 exhibits consistent C2 beaconing behavior with 1,440 HTTPS connections to rare external IP at precise 60-second intervals with minimal jitter and constant payload size.\",\n  \"recommended_actions\": [\"Isolate WKSTN-155 from the network immediately to prevent further C2 communication\", \"Capture network traffic to 203.0.113.140 for malware analysis and IOC extraction\", \"Perform forensic triage on WKSTN-155 including memory dump, process analysis, and persistence mechanism checks\", \"Check other hosts for connections to 203.0.113.140 or similar beaconing patterns\"],\n  \"escalate\": true,\n  \"reasoning\": \"The alert shows classic C2 beaconing indicators: highly regular 60-second intervals with under 3% jitter, consistent 312-byte payload sizes, and 1,440 connections over 24 hours matching temporal regularity patterns described in threat intelligence. These characteristics strongly indicate Application Layer Protocol C2 communication (T1071) and require immediate incident response.\",\n  \"confidence_explanation\": \"High confidence based on multiple strong beaconing indicators aligning with known C2 detection patterns from threat intelligence context.\"\n}\n```",
+  "usage": {
+    "input_tokens": 854,
+    "output_tokens": 320
+  },
+  "latency_seconds": 6.956,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:29Z"
+}

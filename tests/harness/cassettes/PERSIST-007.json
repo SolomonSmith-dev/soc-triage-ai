@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-007",
+  "prompt_sha256": "764f0127a5fab2e486a52f65c35ade5d31fac5e47859dac5c25d2df59104b9df",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1136.001\", \"T1078.003\"],\n  \"summary\": \"Unauthorized creation of hidden local administrator account 'support$' on SRV-APP-02 via remote session with registry modification to conceal from logon screen, consistent with insider threat and persistence tactics.\",\n  \"recommended_actions\": [\n    \"Immediately disable the 'support$' account and investigate the remote session source IP and originating user account\",\n    \"Review Event ID 4672 logs and all administrative actions performed by this account since creation\",\n    \"Examine registry modifications and check for other hidden accounts or unauthorized privilege escalations on SRV-APP-02 and adjacent systems\",\n    \"Correlate activity with change management tickets and verify legitimacy with IT administration team\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple insider threat indicators from the threat intelligence: creating accounts outside normal provisioning, using naming conventions that blend in (support$ appears system-related), and actively hiding the account from normal view via registry manipulation. The remote creation combined with concealment tactics suggests either insider threat activity or initial access persistence by an adversary who has compromised credentials. The behavior does not align with legitimate administrative provisioning processes.\"\n}\n```",
+  "usage": {
+    "input_tokens": 717,
+    "output_tokens": 307
+  },
+  "latency_seconds": 8.572,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:37Z"
+}

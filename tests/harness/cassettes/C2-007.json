@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-007",
+  "prompt_sha256": "a7f195ac16c334317d6e3d457f33361f96624a1ed38fadcdbfecc1c2bda9e2d3",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"medium\",\n  \"mitre_techniques\": [\"T1071\", \"T1090\"],\n  \"summary\": \"DMZ web server established long-duration outbound SOCKS connection with large inbound data transfer, consistent with proxy-based C2 or tunneled data exfiltration.\",\n  \"recommended_actions\": [\"Isolate the affected web server from the network immediately\", \"Capture full packet data from the connection to 198.51.100.200:443 for forensic analysis\", \"Review web server logs and running processes for unauthorized services or compromises\", \"Check for IOCs related to the destination IP 198.51.100.200 in threat intelligence feeds\", \"Examine firewall logs for other systems communicating with this IP\"],\n  \"escalate\": true,\n  \"reasoning\": \"A web server initiating outbound SOCKS connections is highly anomalous and suggests compromise. The 18-hour duration with 6 GB inbound transfer indicates either C2 activity over an application layer protocol (T1071) or proxy usage (T1090). The direction and volume could indicate tool/payload download or reverse tunneling for internal network access.\",\n  \"confidence_note\": \"Medium confidence due to limited context on legitimate business use cases for this server, but behavioral indicators strongly suggest malicious activity\"\n}\n```",
+  "usage": {
+    "input_tokens": 735,
+    "output_tokens": 312
+  },
+  "latency_seconds": 8.36,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:42Z"
+}

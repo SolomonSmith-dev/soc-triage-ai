@@ -1,0 +1,13 @@
+{
+  "case_id": "PHISH-004",
+  "prompt_sha256": "77c98563cfd8d0df8772e8a94b7df5b19c8ef065eb50a95390a3bdb55cbc5df7",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1566.002\", \"T1566.003\"],\n  \"summary\": \"User clicked phishing link and granted OAuth consent to suspicious third-party application 'DocuView Pro' with excessive mailbox permissions, indicating potential M365 OAuth consent phishing attack.\",\n  \"recommended_actions\": [\n    \"Immediately revoke OAuth consent grant for 'DocuView Pro' application in M365 admin portal\",\n    \"Contain user account and reset credentials as potential compromise\",\n    \"Review M365 audit logs for all OAuth grants and suspicious mailbox access by the application\",\n    \"Hunt for similar phishing messages across the tenant and block sender infrastructure\",\n    \"Search for additional victims who may have granted consent to the same application\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches the critical severity classification as an OAuth grant was given to a suspicious application. The threat intelligence identifies M365 OAuth consent phishing requesting excessive permissions as a phishing indicator (T1566.003), and the user clicked a link (T1566.002). The application is newly registered in a foreign tenant and requests sensitive permissions (Mail.Read, offline_access), consistent with credential harvesting tactics.\",\n  \"confidence_reasoning\": \"High confidence based on clear OAuth consent phishing indicators and recent suspicious app registration.\"\n}\n```",
+  "usage": {
+    "input_tokens": 890,
+    "output_tokens": 324
+  },
+  "latency_seconds": 7.663,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:42Z"
+}

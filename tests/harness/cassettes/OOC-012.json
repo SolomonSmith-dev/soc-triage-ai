@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-012",
+  "prompt_sha256": "ef2079198c20875df7138ce7e1ce8b1ccee3be60882bd83b61b9d487881b07e6",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Benign calendar notification regarding an internal Q3 planning meeting time change with no security indicators.\",\n  \"recommended_actions\": [\"No action required\", \"Close alert as false positive\", \"Consider tuning alert rules to exclude routine calendar notifications\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert contains only a routine meeting schedule change with no malicious indicators, suspicious activities, or security-relevant content. The message discusses normal business operations (Q3 planning meeting logistics) and does not match any threat patterns from the provided intelligence context such as insider threat indicators or malicious service installations.\"\n}\n```",
+  "usage": {
+    "input_tokens": 523,
+    "output_tokens": 169
+  },
+  "latency_seconds": 5.055,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:15Z"
+}

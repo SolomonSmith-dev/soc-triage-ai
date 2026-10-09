@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-006",
+  "prompt_sha256": "f0ed4c8b2b737dd9232a59f47c5aaafe6f47c789db39bdf677168d3907c5a070",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Legitimate software deployment of signed Google Chrome update with expected scheduled task creation by vendor installer.\",\n  \"recommended_actions\": [\"Verify the installer signature matches Google LLC in deployment logs\", \"Confirm the scheduled task 'GoogleUpdateTaskMachine' parameters match standard Google update configurations\", \"Document as authorized change in asset management system\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert describes legitimate administrative activity: an approved Chrome update deployed through official channels with a Google-signed installer creating the standard GoogleUpdateTaskMachine scheduled task. While the threat intelligence context mentions scheduled task creation as a potential persistence mechanism, this specific case involves a verified vendor installer with valid code signing, which is normal software maintenance behavior rather than malicious activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 605,
+    "output_tokens": 198
+  },
+  "latency_seconds": 6.056,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:33Z"
+}

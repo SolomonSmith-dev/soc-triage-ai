@@ -1,0 +1,13 @@
+{
+  "case_id": "RANSOM-005",
+  "prompt_sha256": "0aa2bb8f62c3b4fd3756dc1449b45f71bb9c9de5032fe20be0392831b454442f",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"EDR successfully blocked execution of known ransomware binary on SALES-07 delivered via user-downloaded ZIP archive before encryption could occur.\",\n  \"recommended_actions\": [\n    \"Isolate host SALES-07 from network to prevent potential lateral movement\",\n    \"Obtain hash of blocked binary and ZIP archive for threat intelligence enrichment\",\n    \"Interview user to determine source of ZIP download and assess if phishing or other users affected\",\n    \"Scan SALES-07 for additional malicious files or persistence mechanisms that may have been established\",\n    \"Review recent authentication logs and network connections from SALES-07 for signs of reconnaissance activity\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This represents a pre-encryption ransomware indicator with confirmed malware delivery and attempted execution, meeting high severity criteria per the triage framework. EDR successfully prevented execution, but the threat intelligence context indicates modern ransomware operators often spend 7-30 days in reconnaissance before deploying encryption, requiring investigation into whether earlier compromise occurred. Escalation warranted for incident response to determine initial access vector and scope.\",\n  \"mitre_techniques_note\": \"No specific MITRE techniques can be identified from the provided threat intelligence context for this alert\"\n}\n```",
+  "usage": {
+    "input_tokens": 875,
+    "output_tokens": 316
+  },
+  "latency_seconds": 8.132,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:57Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "RANSOM-006",
+  "prompt_sha256": "6203c85dd63c9e29d50b0118d635e11eb0fadd70bad2dace040d05cf7cad73d1",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1048\", \"T1567\"],\n  \"summary\": \"Database server DB-03 exfiltrated 40 GB to file-sharing service via rclone during off-hours, followed by suspicious backup agent service termination.\",\n  \"recommended_actions\": [\"Isolate DB-03 from network immediately to prevent further data loss\", \"Identify what data was accessed and uploaded by reviewing file access logs and rclone command history\", \"Investigate user account responsible for the activity and check for credential compromise or insider threat indicators\", \"Verify integrity of backup systems and check for ransomware precursor activity given the backup agent service stops\"],\n  \"escalate\": true,\n  \"reasoning\": \"This activity matches multiple data exfiltration patterns from the threat intelligence: large outbound transfers during off-hours using legitimate file transfer services, and use of rclone for exfiltration. The subsequent stopping of backup agents is a known ransomware precursor tactic to prevent recovery. The combination of high-volume data transfer from a database server and disabling of backup protection indicates either advanced insider threat activity or pre-ransomware preparation.\",\n  \"mitre_attack_mapping\": {\n    \"T1048\": \"Exfiltration Over Alternative Protocol\",\n    \"T1567\": \"Exfiltration Over Web Service\"\n  }\n}\n```",
+  "usage": {
+    "input_tokens": 863,
+    "output_tokens": 330
+  },
+  "latency_seconds": 7.663,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:57Z"
+}

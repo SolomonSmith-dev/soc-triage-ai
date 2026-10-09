@@ -1,0 +1,13 @@
+{
+  "case_id": "CRED-003",
+  "prompt_sha256": "316e5d7c5427a1f008d8611fa9abf70a1926f65fe6d2bd70c00d3ed1c933e018",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1003.002\"],\n  \"summary\": \"Service account svc_deploy used reg.exe to extract SAM and SYSTEM registry hives to C:\\\\Temp and compressed them, indicating OS credential dumping activity.\",\n  \"recommended_actions\": [\n    \"Immediately isolate SRV-APP-04 from the network to prevent credential exfiltration\",\n    \"Investigate svc_deploy account for compromise and review all recent authentication activity\",\n    \"Identify and quarantine the zip file in C:\\\\Temp, check for file transfer or exfiltration attempts\",\n    \"Force password reset for all accounts that have authenticated to SRV-APP-04\",\n    \"Review process execution timeline and parent process of reg.exe for initial access vector\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This activity matches T1003.002 Security Account Manager credential dumping technique. The SAM and SYSTEM hives contain local account password hashes that can be extracted offline for credential compromise. The subsequent compression suggests preparation for exfiltration, making this a high-confidence critical security incident requiring immediate containment and investigation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 846,
+    "output_tokens": 289
+  },
+  "latency_seconds": 7.434,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:44Z"
+}

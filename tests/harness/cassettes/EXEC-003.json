@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-003",
+  "prompt_sha256": "67a57ce04538fa9f7ebd0e0265a52218bd97ebf7d31c410739eeb5698dcb7160",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1218.005\"],\n  \"summary\": \"mshta.exe executed with remote URL argument from user context, indicating potential malicious HTML Application execution, a known living-off-the-land binary abuse technique.\",\n  \"recommended_actions\": [\n    \"Isolate the affected workstation to prevent potential lateral movement or C2 communication\",\n    \"Block network communication to 203.0.113.21 at the firewall and investigate any established connections to this IP\",\n    \"Examine process tree and child processes spawned by mshta.exe, correlate with network events to identify C2 or data exfiltration\",\n    \"Review user activity and email logs to determine initial access vector (likely phishing or malicious link)\",\n    \"Collect memory dump and disk artifacts from the affected system for forensic analysis\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"mshta.exe is explicitly listed as a high-priority execution indicator in the threat intelligence context as a living-off-the-land binary. Execution with a remote URL argument from explorer.exe parent process indicates user-initiated execution, likely from a malicious link or attachment. This matches the pattern of browser/user interaction leading to script interpreter abuse and warrants immediate escalation and containment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 800,
+    "output_tokens": 319
+  },
+  "latency_seconds": 8.306,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:58Z"
+}

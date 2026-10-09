@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-008",
+  "prompt_sha256": "575095d5bbb11ea13724e2745708138fa9940b42053e293f1404f75f052b323a",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Kubernetes pod checkout-7f9c experienced repeated OOMKilled events due to exceeding 512Mi memory limit, indicating a resource management issue rather than security concern.\",\n  \"recommended_actions\": [\"Review application memory usage patterns for pod checkout-7f9c\", \"Evaluate if memory limit of 512Mi is appropriate for the workload\", \"Check for memory leaks in the application code\", \"Consider adjusting resource limits or optimizing application performance\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert describes a resource exhaustion condition (OOMKilled) which is a typical operational issue in Kubernetes environments. While the threat intelligence context mentions Kubernetes security concerns like exec into pods, privilege escalation, and service account token abuse, this alert shows no indicators of malicious activity\u2014only a container repeatedly exceeding its configured memory limit, which is a common application performance or configuration problem.\"\n}\n```",
+  "usage": {
+    "input_tokens": 733,
+    "output_tokens": 236
+  },
+  "latency_seconds": 6.177,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:12Z"
+}

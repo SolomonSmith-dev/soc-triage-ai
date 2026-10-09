@@ -1,0 +1,13 @@
+{
+  "case_id": "WEB-003",
+  "prompt_sha256": "73aa5a41adf47351b58a5efc878455c2db7892532825877c1de5590ea2fc8951",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1071\"],\n  \"summary\": \"Palo Alto GlobalProtect command injection exploit detected (CVE-2024-3400) with successful outbound C2 connection from management plane.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the affected Palo Alto firewall from the network to prevent further C2 communication\",\n    \"Check /var/log/pan/ for suspicious files and review all GlobalProtect logs for additional compromise indicators\",\n    \"Verify PAN-OS version and apply emergency patches for CVE-2024-3400 if available\",\n    \"Hunt for lateral movement from the firewall management plane and review all firewall configuration changes\",\n    \"Capture network traffic to/from the unknown host for IOC extraction and block the destination IP\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches CVE-2024-3400 exploitation patterns with command injection to GlobalProtect /ssl-vpn/hipreport.esp endpoint followed by outbound connection from the management plane, indicating successful compromise. This CVE was exploited as a zero-day by threat actor UTA0218 and the outbound connection suggests active command and control establishment, requiring immediate incident response.\"\n}\n```",
+  "usage": {
+    "input_tokens": 782,
+    "output_tokens": 310
+  },
+  "latency_seconds": 7.699,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:05Z"
+}

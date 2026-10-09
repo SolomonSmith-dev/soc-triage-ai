@@ -1,0 +1,13 @@
+{
+  "case_id": "INSIDER-006",
+  "prompt_sha256": "e1a66e5e3fe33b06f4b0c54873c121936e1832dd60d7a2ec77d1e4ca96e8ddd4",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Finance analyst performed routine quarterly report export consistent with normal business activity and weekly patterns.\",\n  \"recommended_actions\": [\"Document event as normal business activity\", \"No further action required\"],\n  \"escalate\": false,\n  \"reasoning\": \"The activity described is a small-scale export (60 rows) during business hours that matches the employee's established weekly routine. This does not align with insider threat indicators such as mass downloads, unusual access patterns, or behavior changes associated with high-risk life events. DLP did not trigger, further supporting benign classification.\"\n}\n```",
+  "usage": {
+    "input_tokens": 701,
+    "output_tokens": 160
+  },
+  "latency_seconds": 4.401,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:10Z"
+}

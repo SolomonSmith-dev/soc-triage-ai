@@ -1,0 +1,13 @@
+{
+  "case_id": "PHISH-003",
+  "prompt_sha256": "b6b260551feb6fb658a6619c76cd2bf0a7b64318f1a15d55f05f276eb2404dea",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1059.001\"],\n  \"summary\": \"Malicious macro in external invoice document spawned encoded PowerShell with subsequent C2 communication, consistent with phishing-based initial access.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the affected workstation from the network to prevent further C2 communication\",\n    \"Terminate the powershell.exe process and any child processes spawned from WINWORD.EXE\",\n    \"Block outbound connections to 203.0.113.77 at the firewall and add to threat intelligence feeds\",\n    \"Retrieve and analyze the invoice_Q3.docm file in a sandbox environment\",\n    \"Decode the base64 PowerShell command to identify payload and persistence mechanisms\",\n    \"Review email logs to identify other recipients of the malicious email and check for additional compromises\",\n    \"Conduct forensic analysis of the endpoint for signs of credential theft, persistence, or lateral movement\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert exhibits multiple high-priority indicators from the threat intelligence context: cmd.exe (or Office application) spawning PowerShell with encoded commands, which matches known malicious patterns. The combination of macro-enabled document from external sender, encoded PowerShell execution, and immediate C2 callback indicates active compromise requiring immediate incident response.\"\n}\n```",
+  "usage": {
+    "input_tokens": 835,
+    "output_tokens": 335
+  },
+  "latency_seconds": 9.41,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:42Z"
+}

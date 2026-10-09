@@ -1,0 +1,13 @@
+{
+  "case_id": "RANSOM-003",
+  "prompt_sha256": "bfb0a88198c2b94e41ace35c65cbaa62dc5732a63e609e527796a1a763c1f82f",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1486\"],\n  \"summary\": \"Active ransomware encryption detected on workstation HR-LT-11 with 2,300 files encrypted in 4 minutes and ransom note present.\",\n  \"recommended_actions\": [\n    \"Verify host isolation is maintained and check for lateral movement to other systems\",\n    \"Identify patient zero and initial access vector through EDR timeline analysis\",\n    \"Immediately verify integrity of backups and check for signs of exfiltration or backup tampering\",\n    \"Hunt for IOCs across environment including similar file rename patterns and ransom note filenames\",\n    \"Engage incident response team for containment assessment and potential forensic preservation\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches critical severity criteria from threat intelligence: active encryption detected with high volume file modifications (2,300 files in 4 minutes exceeds normal activity), ransomware-specific file extension (.locked), and ransom note present (HOW_TO_RECOVER.txt). While EDR isolated the host, this represents confirmed ransomware deployment requiring immediate escalation and investigation for potential multi-host compromise given typical 7-30 day dwell time for modern ransomware operations.\"\n}\n```",
+  "usage": {
+    "input_tokens": 892,
+    "output_tokens": 308
+  },
+  "latency_seconds": 7.942,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:51Z"
+}

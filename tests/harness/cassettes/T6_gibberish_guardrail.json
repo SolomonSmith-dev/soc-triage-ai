@@ -1,0 +1,13 @@
+{
+  "case_id": "T6_gibberish_guardrail",
+  "prompt_sha256": "dfc9a286ae4fb0e0e38302671392d68dfb3f6c8aad3df7ca7e4f022ec9fc3db6",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Alert contains gibberish content with no recognizable security indicators or threat patterns.\",\n  \"recommended_actions\": [\"Close alert as noise or data corruption\", \"Review alert source configuration for data quality issues\", \"No further investigation required\"],\n  \"escalate\": false,\n  \"reasoning\": \"The alert content consists of random character strings (asdfqwerzxcv, 1234567890) and generic placeholder text (lorem ipsum) with no correlation to any security events, indicators of compromise, or threat patterns in the provided intelligence context. This appears to be test data, corrupted input, or system noise rather than a legitimate security event.\"\n}\n```",
+  "usage": {
+    "input_tokens": 650,
+    "output_tokens": 179
+  },
+  "latency_seconds": 5.12,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:17Z"
+}

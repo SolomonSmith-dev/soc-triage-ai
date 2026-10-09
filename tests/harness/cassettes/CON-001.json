@@ -1,0 +1,13 @@
+{
+  "case_id": "CON-001",
+  "prompt_sha256": "77833ae4a2346b17d48544acbad658b0c5d56255d5cc3c3bd33609aaf8e82cf2",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\", \"T1078\"],\n  \"summary\": \"Suspected credential brute force attack against VPN gateway with successful authentication following 3,000 failed login attempts from external IP, claiming to be authorized pentest without proper change control documentation.\",\n  \"recommended_actions\": [\n    \"Immediately disable the compromised account that successfully authenticated\",\n    \"Block source IP 198.51.100.77 at perimeter firewall\",\n    \"Contact change management and authorized pentest vendors to verify legitimacy of testing claim\",\n    \"Review all VPN sessions from source IP for lateral movement or data exfiltration\",\n    \"Audit recent VPN authentication logs for additional successful logins from this or related IPs\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches the threat intelligence pattern for brute force credential access: high failed authentication count from single source IP followed by successful login. The claim of authorized penetration testing without corresponding change record is a common social engineering tactic. The successful authentication after mass failures indicates potential credential compromise requiring immediate containment.\",\n  \"mitre_techniques_context\": \"T1110 (Brute Force) for 3,000 failed login attempts, T1078 (Valid Accounts) for successful authentication following the brute force attack\"\n}\n```",
+  "usage": {
+    "input_tokens": 749,
+    "output_tokens": 322
+  },
+  "latency_seconds": 8.182,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:38Z"
+}

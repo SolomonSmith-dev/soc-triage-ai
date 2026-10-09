@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-007",
+  "prompt_sha256": "d1187f7f2df51688dfc0228d99b9840e06be2db0f551164cf688ff1ef33796b0",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Alert contains corporate earnings information with no security relevance or indicators of malicious activity.\",\n  \"recommended_actions\": [\"Mark alert as false positive\", \"Review alert generation rules to prevent similar non-security content from triggering alerts\", \"Close ticket with no further action required\"],\n  \"escalate\": false,\n  \"reasoning\": \"The alert content describes a routine quarterly earnings call schedule and revenue projections, which has no connection to security threats, IOCs, or attack patterns. This appears to be benign corporate communication that was incorrectly flagged as a security event and should be classified as out of scope.\"\n}\n```",
+  "usage": {
+    "input_tokens": 603,
+    "output_tokens": 172
+  },
+  "latency_seconds": 5.171,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:10Z"
+}

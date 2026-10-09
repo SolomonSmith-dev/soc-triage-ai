@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-007",
+  "prompt_sha256": "002c14d7e9c4b6f575e3f1efa650f2b7975ef3aa1109743914cfeee1f99b0d4a",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1059.003\", \"T1059\"],\n  \"summary\": \"ERP Java process spawned cmd.exe executing domain reconnaissance commands followed by certutil downloading a file from an external host, indicating potential post-exploitation activity.\",\n  \"recommended_actions\": [\n    \"Isolate the affected ERP server from the network to prevent further command and control communication\",\n    \"Identify and analyze the file downloaded by certutil, including the external host IP/domain and file hash\",\n    \"Review authentication logs using the logon ID to determine the user context and correlate with any suspicious logon events\",\n    \"Examine parent Java process for signs of compromise such as web shell deployment or exploitation of ERP application vulnerabilities\",\n    \"Check for additional process creation events (4688) and network connections from this host for lateral movement indicators\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert shows clear signs of post-exploitation activity with cmd.exe spawned by a business application executing reconnaissance commands (whoami, net user) followed by certutil being abused as a living-off-the-land binary to download content from an external host. The chained behavior of discovery commands and file download from an unexpected parent process strongly suggests an active compromise requiring immediate investigation and containment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 856,
+    "output_tokens": 315
+  },
+  "latency_seconds": 8.791,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:06Z"
+}

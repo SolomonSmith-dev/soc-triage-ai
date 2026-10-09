@@ -1,0 +1,13 @@
+{
+  "case_id": "NOISE-001",
+  "prompt_sha256": "fc6e7c8d61f6234b40f24d1939c9357a027931f9e4bed48efb9db6c49471de24",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Multiple file servers exhibiting high-volume file modification activity consistent with active ransomware encryption phase.\",\n  \"recommended_actions\": [\n    \"Immediately isolate affected file servers from the network to prevent further encryption and potential lateral spread\",\n    \"Check for presence of ransom notes (README.txt, HOW_TO_DECRYPT.txt, DECRYPT_INFO.html) and file extension changes (.lockbit, .blackcat, .akira, .clop)\",\n    \"Identify and investigate the initial access vector and any lateral movement indicators including unusual SMB write activity sources\",\n    \"Engage incident response team and initiate ransomware response playbook\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"The alert matches critical ransomware encryption phase indicators from threat intelligence: thousands of file modifications per minute per host across multiple file servers. This pattern is a definitive sign of active ransomware execution requiring immediate containment. No MITRE technique IDs were provided in the threat intelligence context for ransomware encryption behavior.\",\n  \"confidence_note\": \"High confidence based on direct correlation with documented ransomware encryption patterns\"\n}\n```",
+  "usage": {
+    "input_tokens": 800,
+    "output_tokens": 291
+  },
+  "latency_seconds": 6.788,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:05Z"
+}

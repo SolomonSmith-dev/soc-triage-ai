@@ -1,0 +1,13 @@
+{
+  "case_id": "BEN-006",
+  "prompt_sha256": "bd57def96a524ff1c107bb33267b1592e5694c68d80fd973bb9e025bc8789ba4",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Authorized Atomic Red Team test simulating LSASS access on isolated lab host LAB-04, documented in red team calendar.\",\n  \"recommended_actions\": [\"Verify entry in red team calendar matches alert timestamp\", \"Confirm LAB-04 network isolation from production environment\", \"Document test completion for audit trail\"],\n  \"escalate\": false,\n  \"reasoning\": \"This is a scheduled security test on an isolated lab system, not a security incident. The activity touching LSASS would normally indicate T1003.001 credential dumping, but the controlled test environment, pre-coordination, and network isolation make this expected behavior rather than malicious activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 785,
+    "output_tokens": 187
+  },
+  "latency_seconds": 4.934,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:34Z"
+}

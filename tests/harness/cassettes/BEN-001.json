@@ -1,0 +1,13 @@
+{
+  "case_id": "BEN-001",
+  "prompt_sha256": "87d25ff0b6bc1cd0e6efe61507412802bb7cd640ff46d9e9c94f8e45f67f1a32",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Legitimate shadow copy creation by authorized backup service account during scheduled maintenance window.\",\n  \"recommended_actions\": [\n    \"Verify the activity correlates with scheduled backup job logs in Veeam\",\n    \"Confirm no other suspicious activity from svc_veeam account outside backup window\",\n    \"Document as baseline behavior for future comparison\"\n  ],\n  \"escalate\": false,\n  \"reasoning\": \"While vssadmin shadow copy operations are listed as pre-encryption indicators for ransomware, this activity occurred during an approved nightly backup window from a legitimate backup server (BK-01) using the expected Veeam service account. The context indicates concern for shadow copy deletion (vssadmin delete shadows), not creation, and specifically flags Veeam service account anomalies rather than normal operation. This appears to be authorized business activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 871,
+    "output_tokens": 230
+  },
+  "latency_seconds": 6.253,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:30Z"
+}

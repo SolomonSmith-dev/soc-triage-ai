@@ -1,0 +1,13 @@
+{
+  "case_id": "BEN-002",
+  "prompt_sha256": "4882ced822ec16cda04951b7576d3b22f422985036a2ea105e75481bcda1aa42",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"SCCM-deployed Patch Tuesday updates executed encoded PowerShell via signed scripts across 400 managed workstations during scheduled maintenance window.\",\n  \"recommended_actions\": [\"Verify the PowerShell script signature chain matches expected SCCM certificates\", \"Confirm execution aligns with published Patch Tuesday maintenance schedule\", \"Spot-check 3-5 workstations to validate successful patch deployment and expected system state\"],\n  \"escalate\": false,\n  \"reasoning\": \"While encoded PowerShell (-enc) is flagged as high-priority in threat intelligence, this execution originates from the legitimate SCCM service (CCMExec), uses a signed script, occurs during a scheduled maintenance window (03:00), and aligns with expected Patch Tuesday deployment patterns across managed infrastructure. The context indicates authorized systems management activity rather than malicious behavior.\"\n}\n```",
+  "usage": {
+    "input_tokens": 897,
+    "output_tokens": 230
+  },
+  "latency_seconds": 6.078,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:29Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-007",
+  "prompt_sha256": "bc3f6625b5dabf3b509ed2308c732b4789c4491fdfeb9673c273d9220518c7a8",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1053\", \"T1053.005\"],\n  \"summary\": \"schtasks.exe created a scheduled task with SYSTEM privileges pointing to a script in C:\\\\Users\\\\Public, a non-standard location commonly abused for persistence.\",\n  \"recommended_actions\": [\n    \"Identify the user account that executed schtasks.exe and verify legitimacy via Event ID 4688 process creation logs\",\n    \"Examine the scheduled task details including task name, trigger schedule, and the full path to the script in C:\\\\Users\\\\Public\",\n    \"Review the script content for malicious code and check for associated network connections or child processes\",\n    \"Correlate with authentication events using logon ID to identify potential lateral movement or compromised credentials\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple high-priority indicators from the threat intelligence context: schtasks.exe creating a SYSTEM-level task (T1053.005) and the task pointing to a script in a non-standard directory (C:\\\\Users\\\\Public). The context explicitly flags tasks pointing to scripts in unusual locations as suspicious. The combination of SYSTEM privileges and non-standard script location on a workstation warrants escalation for further investigation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 789,
+    "output_tokens": 308
+  },
+  "latency_seconds": 6.803,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:58Z"
+}

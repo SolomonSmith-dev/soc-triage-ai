@@ -1,0 +1,13 @@
+{
+  "case_id": "CON-003",
+  "prompt_sha256": "cfef923a2e00940e269ca6eddb37c41301c83da30e6b563a193d85ee8d24ea84",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1543\"],\n  \"summary\": \"Quarantined malicious process continues execution with active C2 beaconing every 60 seconds to 203.0.113.140, indicating EDR containment failure and potential persistence mechanism.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the affected host from the network to break C2 communication\",\n    \"Verify EDR quarantine status and manually terminate the beaconing process if still running\",\n    \"Investigate persistence mechanisms including scheduled tasks, services, and registry run keys per T1543\",\n    \"Collect full process tree, network connections, and memory dump for forensic analysis\",\n    \"Review authentication and execution events on the host around initial compromise time\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"The continued beaconing despite EDR quarantine indicates either EDR evasion or a persistence mechanism maintaining C2 communication. The regular 60-second beacon pattern is characteristic of automated command and control activity. This represents an active compromise requiring immediate containment and investigation into how the process maintains execution and network access after quarantine.\",\n  \"reasoning_extended\": \"Per the network anomaly triage guidance, beaconing alerts require correlation with endpoint telemetry and immediate response when confirmed malicious. The EDR quarantine failure suggests the threat may be leveraging system process modification (T1543) or another persistence technique to maintain execution.\"\n}\n```",
+  "usage": {
+    "input_tokens": 771,
+    "output_tokens": 347
+  },
+  "latency_seconds": 8.568,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:43Z"
+}

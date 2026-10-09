@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-005",
+  "prompt_sha256": "c4c7ac0fb63d3891c8ae68aee105b3a261a47850b83fed0690325f208bbe6fde",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1090\"],\n  \"summary\": \"Finance workstation establishing periodic connections to Tor entry node using python-requests user agent, indicating potential data exfiltration or C2 communication.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the finance workstation from the network to prevent further data exfiltration\",\n    \"Review all processes running on the workstation, focusing on Python-based applications and scheduled tasks\",\n    \"Examine recent user activity and file access logs to identify potential data theft or compromise\",\n    \"Conduct forensic memory and disk analysis to identify malware or unauthorized tooling\",\n    \"Interview the user to determine if they have legitimate business need for Python or Tor access\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert combines multiple high-risk indicators: a finance workstation (sensitive data environment) connecting to Tor infrastructure with suspicious python-requests user agent from a user workstation, both flagged in the threat intelligence. The periodic 30-minute pattern suggests automated beaconing behavior consistent with data exfiltration or command-and-control activity. Finance workstations should never legitimately connect to anonymization networks.\",\n  \"mitre_techniques\": [\"T1090\"]\n}\n```",
+  "usage": {
+    "input_tokens": 678,
+    "output_tokens": 307
+  },
+  "latency_seconds": 7.604,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:36Z"
+}

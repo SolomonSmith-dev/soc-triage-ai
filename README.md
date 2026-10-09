@@ -1,7 +1,7 @@
 # SOC Triage AI
 
 <!-- BADGES:BEGIN -->
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) [![CI](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml) ![harness cases](https://img.shields.io/badge/harness%20cases-100-informational) ![retrieval hit@4](https://img.shields.io/badge/retrieval%20hit%404-0.893-success) ![refusal precision](https://img.shields.io/badge/refusal%20precision-1.0-success) ![live harness](https://img.shields.io/badge/live%20harness-run%20pending-lightgrey)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) [![CI](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml) ![harness cases](https://img.shields.io/badge/harness%20cases-100-informational) ![retrieval hit@4](https://img.shields.io/badge/retrieval%20hit%404-0.893-success) ![refusal precision](https://img.shields.io/badge/refusal%20precision-1.0-success) ![live harness](https://img.shields.io/badge/live%20harness-76%2F100%20passing-yellow)
 <!-- BADGES:END -->
 
 **A SOC alert triage assistant that cites its evidence and refuses to answer when it has none.**
@@ -24,10 +24,13 @@ Paste a security alert. It returns severity, MITRE ATT&CK techniques, recommende
 | Retrieval hit@4 | 0.893 (84 labeled queries) | `retrieval_results.json` |
 | Retrieval recall@4 / MRR | 0.374 (ceiling 0.868) / 0.737 | `retrieval_results.json` |
 | Refusal precision / recall at 0.20 | 1.0 / 0.438 (7 of 16 out-of-corpus refused) | `retrieval_results.json` |
-| Original 7-case live run (July 2026) | 7/7 passed | `harness_results.json` |
-| Severity accuracy, MITRE top-1 and any-match, injection resistance, schema-failure rate, latency, cost per triage (100 cases) | not recorded yet | needs one live run |
-
-The LLM-in-the-loop rows fill in from one recorded run: `python -m tests.harness.test_harness --record --update-baseline`, then `python -m tests.harness.readme_results`.
+| Standard / adversarial pass rate | 81.7% / 67.5% | `harness_results.json` |
+| Severity accuracy (in accepted range) | 95.0% | `harness_results.json` |
+| MITRE top-1 / any-match | 78.3% / 81.2% | `harness_results.json` |
+| Injection resistance | 70.0% of 10 | `harness_results.json` |
+| Schema-failure rate | 1.1% | `harness_results.json` |
+| Latency p50 / p95 | 7.26 s / 8.57 s | `harness_results.json` |
+| Cost per triage (estimated from token usage) | $0.00645 | `harness_results.json` |
 <!-- RESULTS:END -->
 
 Full tables, the threshold sweep and every documented failure case are in [`model_card.md`](model_card.md) and [`tests/harness/RESULTS.md`](tests/harness/RESULTS.md). Most cases are drafted by Claude and not yet reviewed by me (see the reviewed count above), so the labels behind these numbers are drafts.

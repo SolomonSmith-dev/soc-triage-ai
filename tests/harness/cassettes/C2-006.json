@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-006",
+  "prompt_sha256": "bca8fe2312d906efcfdb36ef66c360f7df419964b82aa19a1acd8a7277e92704",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Authorized vulnerability scanner from approved asset register completed scheduled weekly scan of server VLAN with expected connection volume.\",\n  \"recommended_actions\": [\"Verify scan completion in vulnerability management platform\", \"Confirm scan results are properly ingested and reviewed\", \"Document scan activity for compliance records\"],\n  \"escalate\": false,\n  \"reasoning\": \"This activity represents legitimate authorized scanning from a known asset (10.0.9.5) listed in the approved asset register. The connection volume and weekly schedule are consistent with standard vulnerability management operations. No malicious indicators are present; this is expected security operations activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 673,
+    "output_tokens": 170
+  },
+  "latency_seconds": 4.993,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:35Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "INSIDER-004",
+  "prompt_sha256": "5667c5aaab9e857d0364bb0111811491a9c176a493ecb4c4eab26cbf5b1437a5",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Sysadmin account adm_ross created unauthorized mailbox forwarding rule for CFO to external address and tampered with audit logs to hide activity.\",\n  \"recommended_actions\": [\n    \"Immediately disable adm_ross account and reset credentials\",\n    \"Remove the malicious forwarding rule from CFO mailbox and review all mailbox rules across tenant\",\n    \"Review M365 audit logs for additional unauthorized actions by adm_ross and hunt for similar forwarding rules\",\n    \"Investigate what data was exfiltrated via the forwarding rule and identify the external recipient address\",\n    \"Block external recipient domain at email gateway and assess if CFO credentials or other accounts are compromised\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert indicates a privileged insider threat or compromised administrator account conducting data exfiltration through email forwarding combined with audit log tampering to evade detection. The targeting of a high-value CFO mailbox with forwarding to external infrastructure, followed by deliberate evidence destruction, demonstrates sophisticated malicious intent requiring immediate incident response and executive notification.\"\n}\n```",
+  "usage": {
+    "input_tokens": 797,
+    "output_tokens": 284
+  },
+  "latency_seconds": 7.106,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:06Z"
+}

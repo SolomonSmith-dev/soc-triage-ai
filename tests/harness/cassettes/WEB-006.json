@@ -1,0 +1,13 @@
+{
+  "case_id": "WEB-006",
+  "prompt_sha256": "49945513519f267c91c041ea6f2e9ed41c883498c6c25bb6fa98824ba1a86337",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"WAF successfully blocked 300 path traversal attempts against a static marketing site with no exploitable application layer.\",\n  \"recommended_actions\": [\n    \"Verify the scanner IP is an authorized vulnerability scanner or add to blocklist if unauthorized\",\n    \"Confirm static site configuration has no server-side processing or file access capabilities\",\n    \"Document the event for trend analysis of reconnaissance activity against public assets\"\n  ],\n  \"escalate\": false,\n  \"reasoning\": \"This represents automated scanning activity that was completely mitigated by the WAF with all requests returning 403. The target is a static host with no application server, making the path traversal attempts non-viable. Per the severity framework, blocked attacks with no user exposure or system impact are informational when properly defended.\"\n}\n```",
+  "usage": {
+    "input_tokens": 720,
+    "output_tokens": 211
+  },
+  "latency_seconds": 6.415,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:11Z"
+}

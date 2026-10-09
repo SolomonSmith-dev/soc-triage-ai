@@ -1,0 +1,13 @@
+{
+  "case_id": "T4_brute_force_ssh",
+  "prompt_sha256": "07d46a75b6c2bad12d7b3679962b28c7701454e7db64abaa5530535a05afab38",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\"],\n  \"summary\": \"Active SSH brute force attack detected from known Tor exit node against bastion host with 5000 failed authentication attempts in 10 minutes.\",\n  \"recommended_actions\": [\n    \"Immediately block source IP 185.220.101.45 at firewall/network perimeter\",\n    \"Verify no successful authentications occurred from this source IP in extended time window\",\n    \"Review all SSH access to srv-bastion-01 for any successful logins from unusual sources or geographic locations\",\n    \"Consider implementing rate limiting or fail2ban rules for SSH authentication attempts\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches high-priority patterns from threat intelligence including failed SSH from external IPs indicating brute force activity and login attempt from a known Tor exit node. The volume of 5000 attempts in 10 minutes represents an aggressive credential access attempt against a critical bastion host. While no successful authentication has occurred yet, this requires immediate response to prevent potential compromise.\",\n  \"mitre_attack_mapping\": {\n    \"T1110\": \"Brute Force - High volume of failed SSH authentication attempts to gain credential access\"\n  }\n}\n```",
+  "usage": {
+    "input_tokens": 709,
+    "output_tokens": 305
+  },
+  "latency_seconds": 7.189,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:29Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "CON-005",
+  "prompt_sha256": "59c5675ef861692563ad207b9d1e8cdfd99f681f44153248a15da77e6eb9f6d7",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1486\"],\n  \"summary\": \"Active ransomware encryption detected on file server with 4,000 files renamed to .locked extension and ransom notes deployed across multiple shares despite clean antivirus scan.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the file server from the network to prevent further encryption and lateral movement\",\n    \"Identify and isolate any other hosts with SMB connections to the affected file server in the last 30 days\",\n    \"Preserve forensic evidence including ransom notes, file timestamps, and process execution logs before initiating incident response procedures\",\n    \"Verify integrity and accessibility of backup systems and ensure they are isolated from production network\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches critical severity indicators from the threat intelligence: high volume file modifications (4,000 files in 5 minutes), ransomware-specific extension changes (.locked), and ransom notes appearing in multiple directories. The clean antivirus scan indicates evasion capabilities. This represents active encryption phase requiring immediate escalation and containment.\",\n  \"mitre_att&ck_mapping\": \"T1486 corresponds to Data Encrypted for Impact based on the encryption activity observed\"\n}\n```",
+  "usage": {
+    "input_tokens": 881,
+    "output_tokens": 306
+  },
+  "latency_seconds": 8.542,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:46Z"
+}
