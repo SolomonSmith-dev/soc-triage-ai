@@ -30,7 +30,7 @@ class FakeRetriever:
         self.hits = hits
 
     def retrieve(self, query, top_k=4, min_score=0.20):
-        return [({"id": "c0", "source": "s.md", "text": "ctx " + query}, 0.5)] if self.hits else []
+        return [({"id": "c0", "source": "s.md", "text": "ctx T1566 " + query}, 0.5)] if self.hits else []
 
 
 def _case(**exp):
