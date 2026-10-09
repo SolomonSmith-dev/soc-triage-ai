@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-003",
+  "prompt_sha256": "d2d53626ed1710079fd577953e27e21decf0e2f62bfca78a7e37cf0ec85b3afc",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1021.002\", \"T1570\"],\n  \"summary\": \"PsExec-based lateral movement detected with service installation across 5 servers from FS-01, indicating potential compromise spreading through SMB admin shares.\",\n  \"recommended_actions\": [\n    \"Immediately isolate FS-01 and the 5 target servers from the network to contain lateral movement\",\n    \"Review Event ID 4688 process creation logs on FS-01 to identify initial compromise vector and parent process of psexec execution\",\n    \"Collect Event ID 4697 and 7045 service installation logs from all target servers to identify installed service names and execution parameters\",\n    \"Check for additional SMB file transfers from FS-01 to other systems and review authentication logs (Event ID 4624/4625) for compromised credentials\",\n    \"Perform memory and disk forensics on FS-01 and target servers to identify malicious payloads or persistence mechanisms\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert exhibits clear indicators of lateral movement via PsExec (T1021.002 SMB/Windows Admin Shares) with psexesvc.exe copied to ADMIN$ shares and subsequent service installations on multiple targets. The tool transfer to 5 servers via SMB (T1570 Lateral Tool Transfer) indicates active adversary movement across the network. This pattern matches known PsExec behavior used for both legitimate administration and malicious lateral movement, requiring immediate containment and investigation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 795,
+    "output_tokens": 377
+  },
+  "latency_seconds": 8.433,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:18Z"
+}

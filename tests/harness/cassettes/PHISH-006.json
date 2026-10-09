@@ -1,0 +1,13 @@
+{
+  "case_id": "PHISH-006",
+  "prompt_sha256": "7171e702bdbf7d41305814a936c5fbea4829edfea21d9de877b54e4591501cd5",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"low\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1566.001\"],\n  \"summary\": \"Secure email gateway successfully blocked spearphishing email with double-extension executable attachment before delivery to recipient.\",\n  \"recommended_actions\": [\n    \"Block sender domain and infrastructure at email gateway and DNS\",\n    \"Hunt for similar messages with double-extension attachments across the tenant\",\n    \"Verify no other instances of this campaign bypassed gateway controls\"\n  ],\n  \"escalate\": false,\n  \"reasoning\": \"This is a spearphishing attachment attempt (T1566.001) using a known evasion technique (double extension report.pdf.exe) to masquerade malicious executable as PDF. Per severity classification guidance, phish blocked at gateway with no user exposure warrants low severity. Gateway controls functioned as intended.\"\n}\n```",
+  "usage": {
+    "input_tokens": 816,
+    "output_tokens": 210
+  },
+  "latency_seconds": 5.476,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:43Z"
+}

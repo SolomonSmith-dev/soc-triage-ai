@@ -1,0 +1,13 @@
+{
+  "case_id": "CRED-004",
+  "prompt_sha256": "951bceeaac4e56241fead2131489966e67efe6ead4900cd7a15ca35f4f42fab5",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1555\"],\n  \"summary\": \"PowerShell script from Downloads folder accessed browser credential store and exfiltrated data to external host, consistent with infostealer malware behavior.\",\n  \"recommended_actions\": [\n    \"Isolate WKSTN-118 from network immediately to prevent further data exfiltration\",\n    \"Capture memory dump and disk image of WKSTN-118 for forensic analysis\",\n    \"Identify and block the external IP/domain receiving the POST request across all egress points\",\n    \"Force password reset for all credentials stored in the affected user's browser\",\n    \"Analyze PowerShell script in Downloads folder and search for similar files across the environment\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches T1555 (Credentials from Password Stores) with PowerShell accessing browser credential files followed by external communication indicating likely exfiltration. The execution from Downloads and POST to external host strongly suggests infostealer malware activity requiring immediate incident response.\"\n}\n```",
+  "usage": {
+    "input_tokens": 679,
+    "output_tokens": 267
+  },
+  "latency_seconds": 7.05,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:44Z"
+}

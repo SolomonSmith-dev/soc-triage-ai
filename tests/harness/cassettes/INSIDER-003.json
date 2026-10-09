@@ -1,0 +1,13 @@
+{
+  "case_id": "INSIDER-003",
+  "prompt_sha256": "863101693acec143acc6dba981c54ed39902f6c553a63f1cfc3bf8bef754fe61",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1567\", \"T1530\"],\n  \"summary\": \"Employee tkim uploaded 8 GB to personal Dropbox during off-hours triggering DLP policy for customer PII, consistent with data exfiltration patterns.\",\n  \"recommended_actions\": [\"Immediately disable tkim's network access and revoke cloud service authentication tokens\", \"Preserve forensic evidence from tkim's corporate laptop and review Dropbox activity logs\", \"Interview tkim's manager to determine employment status and recent behavioral changes\", \"Identify and classify all 14 files that triggered DLP policy to assess data exposure scope\"],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple high-confidence indicators of data exfiltration: large outbound transfer to personal cloud storage during off-hours (02:10), DLP policy violation on customer PII, and use of Dropbox from a corporate laptop. The combination of volume (8 GB), timing (off-hours), destination (personal account), and content sensitivity (customer PII) strongly indicates malicious insider activity requiring immediate investigation and containment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 871,
+    "output_tokens": 274
+  },
+  "latency_seconds": 6.797,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:05Z"
+}

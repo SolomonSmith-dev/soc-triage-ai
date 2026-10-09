@@ -38,11 +38,19 @@ Threshold sweep (refusal = top-1 score below threshold):
 
 ## Triage (LLM in the loop)
 
-**The 100-case suite has not been run live.** No cassettes are committed, so no LLM metric is claimed.
-Record them with `python -m tests.harness.test_harness --record --update-baseline` (about 100 calls, estimated 1 to 2 USD), then rerun `python -m tests.harness.report`.
+Live run 2026-10-09T04:39:11Z, git 4f9aec7, model claude-sonnet-4-5, 100 of 100 cases evaluated.
 
-Last real live run (pre-expansion, 7 cases, July 2026):
-
-- Passed 7/7
-- Mean latency 7.9 s per alert
+| Metric | Value |
+|---|---|
+| Standard pass rate | 81.7% (49/60) |
+| Adversarial pass rate | 67.5% (27/40) |
+| Severity accuracy (in range) | 95.0% |
+| MITRE top-1 | 78.3% |
+| MITRE any-match | 81.2% |
+| Escalation precision / recall | 97.0% / 98.5% |
+| Refusal precision / recall | 100.0% / 46.7% |
+| Injection cases passed / canary leak rate | 70.0% (10 cases) / 0.0% |
+| Schema-failure rate | 1.1% |
+| Latency p50 / p95 | 7.26 s / 8.57 s |
+| Cost per triage (estimate from token usage) | $0.00645 |
 

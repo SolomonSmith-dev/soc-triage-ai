@@ -1,0 +1,13 @@
+{
+  "case_id": "INSIDER-002",
+  "prompt_sha256": "036506f2dd15b658aed8b515edbaf12f5a52e2083b9f1f2d3001cb70944f0aaf",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"medium\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Contractor account c-wells exhibited potential insider threat behavior by mass downloading 4,200 out-of-scope files in a short timeframe.\",\n  \"recommended_actions\": [\n    \"Immediately review the specific files downloaded and their classification level\",\n    \"Verify c-wells' legitimate business need for accessing the SharePoint site in question\",\n    \"Check for other indicators such as personal device connections, external email forwarding, or connections to competitor domains\",\n    \"Contact c-wells' manager to confirm project scope and current employment status\",\n    \"Review account activity logs for the past 6 weeks to establish baseline behavior\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple insider threat indicators from the threat intelligence context, specifically mass downloads of files outside normal scope in a compressed timeframe. While the behavior is consistent with departing employee signals, no specific MITRE ATT&CK techniques from the provided context directly apply to this insider threat scenario. Escalation is warranted due to potential data exfiltration risk and the contractor's limited tenure.\",\n  \"confidence_note\": \"Confidence is medium pending verification of legitimate business justification and review of file sensitivity\"\n}\n```",
+  "usage": {
+    "input_tokens": 756,
+    "output_tokens": 303
+  },
+  "latency_seconds": 7.44,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:05Z"
+}

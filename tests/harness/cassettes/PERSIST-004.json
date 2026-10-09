@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-004",
+  "prompt_sha256": "b99d9ca4826c4361543899f056eb627b8b75f88462622cf09b34f2c2ae74bba7",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1543.003\", \"T1543\"],\n  \"summary\": \"Suspicious Windows service 'WinSvcHelper' created via sc.exe with binary in non-standard location (C:\\\\ProgramData) during remote session, consistent with persistence or lateral movement.\",\n  \"recommended_actions\": [\"Isolate SRV-APP-01 from the network to prevent further lateral movement\", \"Investigate the remote session origin and authenticate the user account involved\", \"Analyze the binary at C:\\\\ProgramData\\\\WinSvcHelper for malicious indicators and obtain file hash\", \"Review recent Event ID 4688 and 4697 logs on SRV-APP-01 for additional suspicious process or service creation\", \"Check for other hosts with similar service installations indicating potential compromise spread\"],\n  \"escalate\": true,\n  \"reasoning\": \"Service installation via sc.exe with binary in C:\\\\ProgramData aligns with T1543.003 (Windows Service persistence). The threat intelligence identifies service creation events as indicators of persistence and lateral movement, particularly noting PsExec-style remote service creation. The combination of remote session origin, non-standard binary path, and automatic start configuration warrants immediate escalation and containment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 798,
+    "output_tokens": 304
+  },
+  "latency_seconds": 7.513,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:29Z"
+}

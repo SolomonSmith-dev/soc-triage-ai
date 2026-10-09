@@ -102,3 +102,20 @@ def test_preflight_raises_on_bad_key_before_any_case_runs():
     with pytest.raises(RuntimeError):
         preflight(Bad(), "m")
     preflight(FakeInner(), "m")  # a working client passes
+
+
+def test_empty_model_reply_is_recorded_and_replays_as_a_schema_failure(tmp_path):
+    class Empty:
+        def __init__(self):
+            self.messages = self
+
+        def create(self, **kw):
+            return SimpleNamespace(content=[], stop_reason="refusal",
+                                   usage=SimpleNamespace(input_tokens=500, output_tokens=0))
+
+    rec = run_case(_case(), FakeRetriever(), "record", tmp_path, real_client=Empty())
+    assert rec["status"] == "ok" and rec["schema_failure"] and not rec["passed"]
+    data = json.loads((tmp_path / "X-1.json").read_text())
+    assert data["response_text"] is None and data["stop_reason"] == "refusal"
+    rep = run_case(_case(), FakeRetriever(), "replay", tmp_path)
+    assert rep["status"] == "ok" and rep["schema_failure"]

@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-006",
+  "prompt_sha256": "064b8aab6ab6655042059eff2133ec843d6ad9c7fc38941eb64f9639c1861e4d",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Authorized administrative RDP session from documented jump host to file server during approved change window.\",\n  \"recommended_actions\": [\"Verify change ticket CHG-4412 details and approval chain\", \"Confirm session activity aligns with documented change scope\", \"Document as baseline administrative behavior for future correlation\"],\n  \"escalate\": false,\n  \"reasoning\": \"This activity matches expected administrative behavior: admin account connecting via RDP from an authorized jump host (JH-01) during a documented change window with reasonable session duration. While RDP lateral movement (T1021.001) can indicate compromise, the context of approved change control, use of proper jump host architecture, and controlled session duration suggests legitimate administrative access rather than adversary lateral movement.\"\n}\n```",
+  "usage": {
+    "input_tokens": 855,
+    "output_tokens": 199
+  },
+  "latency_seconds": 5.589,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:19Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-002",
+  "prompt_sha256": "f5169887d893fc0a328a4bb23a2490484b575a9718f95fb42cdd7db7a55e98c5",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1053.005\", \"T1053\"],\n  \"summary\": \"Non-admin user created a scheduled task with SYSTEM privileges pointing to a suspicious PowerShell script in a public directory, consistent with persistence mechanisms.\",\n  \"recommended_actions\": [\n    \"Isolate WKSTN-090 from the network to prevent potential lateral movement\",\n    \"Retrieve and analyze C:\\\\Users\\\\Public\\\\upd.ps1 for malicious content\",\n    \"Review authentication logs to identify the non-admin user account that created the task\",\n    \"Delete the 'WindowsUpdateCheck' scheduled task immediately\",\n    \"Perform full endpoint detection and response (EDR) scan on WKSTN-090\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple high-priority indicators from threat intelligence: schtasks.exe creating a task with SYSTEM privileges (T1053.005), created by a non-admin account, and pointing to a script in a suspicious location (C:\\\\Users\\\\Public\\\\). The use of a deceptive task name mimicking legitimate Windows updates is a common adversary technique for establishing persistence.\"\n}\n```",
+  "usage": {
+    "input_tokens": 779,
+    "output_tokens": 292
+  },
+  "latency_seconds": 6.226,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:26Z"
+}

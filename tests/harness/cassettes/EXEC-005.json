@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-005",
+  "prompt_sha256": "2d0efd4ff6fd961714d0a5588289e8acee574a7bc5179bbced7e32ee29a06828",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1059.004\"],\n  \"summary\": \"Web server compromised via upload endpoint, executing remote bash script as www-data user indicating successful command injection and potential webshell deployment.\",\n  \"recommended_actions\": [\n    \"Immediately isolate srv-web-04 from the network to prevent further malicious activity\",\n    \"Capture memory dump and disk image of srv-web-04 for forensic analysis\",\n    \"Review web server access logs for the upload endpoint to identify the initial compromise vector and attacker IP addresses\",\n    \"Check for persistence mechanisms including authorized_keys, cron jobs, modified system binaries, and webshells\",\n    \"Inspect the content retrieved from http://198.51.100.9/x.sh if still available and search for indicators of crypto miners or reverse shells\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert shows classic post-exploitation behavior where an attacker successfully achieved command execution on a web server, likely through command injection at an upload endpoint. The curl pipe to bash pattern (T1059.004 Unix Shell) is downloading and executing a remote script, which commonly deploys webshells, reverse shells, or crypto miners as noted in the threat intelligence. The www-data user context confirms web application compromise.\"\n}\n```",
+  "usage": {
+    "input_tokens": 836,
+    "output_tokens": 318
+  },
+  "latency_seconds": 7.624,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:58Z"
+}

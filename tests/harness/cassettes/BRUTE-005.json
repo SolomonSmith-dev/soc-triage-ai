@@ -1,0 +1,13 @@
+{
+  "case_id": "BRUTE-005",
+  "prompt_sha256": "a285a310dbbbaf2db49a3dc746ed51b3fc1dc9d36a3d8a1986212f7c76e8b859",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110.004\", \"T1078\"],\n  \"summary\": \"Large-scale credential stuffing attack against customer login portal with 450 successful account compromises from known credential pairs across distributed infrastructure.\",\n  \"recommended_actions\": [\n    \"Immediately force password reset for all 450 compromised accounts that showed successful session creation\",\n    \"Implement rate limiting and CAPTCHA on login endpoints to mitigate ongoing attack\",\n    \"Block or challenge the 900 source IPs and correlate against threat intelligence feeds for known credential stuffing infrastructure\",\n    \"Review session activity for compromised accounts to identify any unauthorized access or data exfiltration\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This is a clear T1110.004 Credential Stuffing attack using known credential pairs from breach dumps, with 450 successful compromises (1.8% of 25,000 attempts). The distributed nature across 900 IPs and significant success rate indicates sophisticated infrastructure. Successful logins represent T1078 Valid Accounts usage following the credential stuffing, requiring immediate incident response.\",\n  \"confidence_justification\": \"Attack pattern precisely matches threat intelligence indicators for credential stuffing with confirmed success rate\"\n}\n```",
+  "usage": {
+    "input_tokens": 660,
+    "output_tokens": 307
+  },
+  "latency_seconds": 7.588,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:25Z"
+}

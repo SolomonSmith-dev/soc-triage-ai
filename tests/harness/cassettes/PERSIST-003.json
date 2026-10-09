@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-003",
+  "prompt_sha256": "48f0c030fd8bdb867482d5abd2191d7a11b30bf5f703ae10eff27b7f0da32008",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1547.001\"],\n  \"summary\": \"Unsigned executable added to Registry Run key for persistence, masquerading as legitimate Windows process with suspicious timing.\",\n  \"recommended_actions\": [\n    \"Isolate the affected endpoint to prevent potential C2 communication or lateral movement\",\n    \"Extract and submit %APPDATA%\\\\svchost32.exe for malware analysis and hash-based threat intelligence lookup\",\n    \"Review Event ID 4688 process creation logs to identify the parent process that created svchost32.exe and modified the registry key\",\n    \"Check for additional persistence mechanisms and correlate with authentication events using logon ID to identify compromised user account\",\n    \"Search for network connections initiated by svchost32.exe to identify potential C2 infrastructure\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches T1547.001 Registry Run Keys persistence technique with multiple suspicious indicators: unsigned binary in user-writable location, name mimicking legitimate system process (svchost vs svchost32), and temporal proximity between file creation and registry modification suggesting active compromise. The threat intelligence context specifically identifies HKCU\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run modifications as high-priority persistence indicators requiring escalation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 838,
+    "output_tokens": 314
+  },
+  "latency_seconds": 8.037,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:29Z"
+}

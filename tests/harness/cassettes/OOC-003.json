@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-003",
+  "prompt_sha256": "781c307127911a9f0bbcd37f41aa582aa3db3c02b9bff5d3dd8e5e67f8100086",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Employee vacation request is routine HR activity with no indicators of insider threat or malicious behavior.\",\n  \"recommended_actions\": [\"No action required\", \"Document as normal business activity\", \"Close alert as false positive\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert describes a standard vacation request with manager approval and proper coverage arrangements. The provided threat intelligence context focuses on suspicious behavioral indicators like mass data downloads, unauthorized access attempts, and high-risk life events, none of which are present in this routine HR process. This appears to be normal business operations with no security relevance.\"\n}\n```",
+  "usage": {
+    "input_tokens": 536,
+    "output_tokens": 166
+  },
+  "latency_seconds": 4.96,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:05Z"
+}

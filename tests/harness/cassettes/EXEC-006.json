@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-006",
+  "prompt_sha256": "59e24c02e876fb4639edf6ed11b80d41e60f83437407e38c0781e101c65e302b",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Scheduled PowerShell execution of signed internal backup script by authorized service account with 400-day execution history indicates legitimate administrative activity.\",\n  \"recommended_actions\": [\"Document the alert as benign scheduled task activity\", \"Verify svc_backup account is still authorized for this task\", \"Confirm Backup-Config.ps1 signature and file hash remain unchanged\"],\n  \"escalate\": false,\n  \"reasoning\": \"The alert describes a routine scheduled task executed by a dedicated service account (svc_backup) running a signed internal script with a consistent 400-day execution pattern. The use of -ExecutionPolicy Bypass is standard for automated scripts. No indicators of malicious activity are present; this represents expected administrative behavior.\"\n}\n```",
+  "usage": {
+    "input_tokens": 790,
+    "output_tokens": 199
+  },
+  "latency_seconds": 5.18,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:57Z"
+}

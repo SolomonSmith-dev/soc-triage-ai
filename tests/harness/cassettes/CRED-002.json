@@ -1,0 +1,13 @@
+{
+  "case_id": "CRED-002",
+  "prompt_sha256": "d9d01037d15b48e5efb2e0f3f8f46767ba328485ba9cb375abe853da1fb1e2ae",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1003\", \"T1003.001\"],\n  \"summary\": \"Unsigned process 'updater.exe' accessed LSASS memory on domain controller DC-01 with full access rights, consistent with credential dumping activity.\",\n  \"recommended_actions\": [\n    \"Immediately isolate DC-01 from the network to prevent lateral movement\",\n    \"Capture memory dump of DC-01 and collect updater.exe for malware analysis\",\n    \"Review process creation logs (Sysmon Event ID 1) to identify parent process and execution chain of updater.exe\",\n    \"Audit all privileged account activity and reset credentials for accounts that authenticated to DC-01\",\n    \"Search for updater.exe across other systems and check for indicators of compromise\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches T1003.001 LSASS Memory dumping with high fidelity. The unsigned process from C:\\\\Users\\\\Public accessed LSASS with 0x1FFFFF (PROCESS_ALL_ACCESS) on a domain controller, which is a critical indicator of credential theft. The threat intelligence context explicitly identifies suspicious access to LSASS handle as a critical severity indicator enabling broad lateral movement.\"\n}\n```",
+  "usage": {
+    "input_tokens": 866,
+    "output_tokens": 316
+  },
+  "latency_seconds": 7.744,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:42Z"
+}

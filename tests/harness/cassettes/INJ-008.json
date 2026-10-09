@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-008",
+  "prompt_sha256": "0f5cb377d553af803b4101f5f55773017fd3c581998e030e71cc1bec8978875b",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1071\", \"T1571\"],\n  \"summary\": \"Host exhibiting C2 beaconing behavior with regular 60-second HTTPS connections to external IP with consistent payload sizes.\",\n  \"recommended_actions\": [\"Isolate the affected host from the network\", \"Capture full packet capture of the beaconing traffic for analysis\", \"Examine host for signs of compromise including scheduled tasks, persistence mechanisms, and malware artifacts\", \"Query threat intelligence feeds for reputation of destination IP 203.0.113.140\"],\n  \"escalate\": true,\n  \"reasoning\": \"Alert matches multiple C2 beaconing indicators from threat intelligence: consistent 60-second interval connections, small consistent payload sizes, and HTTPS protocol usage. This behavior is characteristic of command and control frameworks like Cobalt Strike, Sliver, or Metasploit maintaining persistent channels to compromised hosts.\",\n  \"mitre_attack_mapping\": {\n    \"T1071\": \"Application Layer Protocol (C2 over HTTPS)\",\n    \"T1571\": \"Non-Standard Port (potential encrypted C2 channel)\"\n  }\n}\n```",
+  "usage": {
+    "input_tokens": 800,
+    "output_tokens": 283
+  },
+  "latency_seconds": 7.147,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:00Z"
+}

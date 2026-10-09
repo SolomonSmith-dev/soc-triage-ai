@@ -1,0 +1,13 @@
+{
+  "case_id": "RANSOM-004",
+  "prompt_sha256": "1a9fa38bf8f9e2e1258d0a433ac393c89831938b25b588c021fa30a3b384d4a8",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1486\", \"T1490\"],\n  \"summary\": \"Active BlackCat/ALPHV ransomware encryption in progress on file server FS-01 with 12,000 files encrypted in 10 minutes and backup destruction on BK-01.\",\n  \"recommended_actions\": [\n    \"Immediately isolate FS-01 and BK-01 from the network to prevent lateral spread\",\n    \"Identify and contain any other hosts showing high file modification rates or SMB connections to/from FS-01\",\n    \"Engage incident response team and executive leadership for ransomware response procedures\",\n    \"Preserve forensic evidence including ransom notes, system memory, and network connection logs\",\n    \"Verify integrity of offline/offsite backups before attempting any recovery\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple high-confidence indicators of active ransomware encryption from the threat intelligence: .blackcat extension associated with BlackCat/ALPHV ransomware family, mass file modifications (12,000 files in 10 minutes exceeds the thousands per minute threshold), ransom notes in every share, and deliberate backup destruction 15 minutes prior to encryption. The backup server compromise indicates sophisticated attacker behavior targeting recovery capabilities before deploying encryption payload.\"\n}\n```",
+  "usage": {
+    "input_tokens": 926,
+    "output_tokens": 327
+  },
+  "latency_seconds": 8.032,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:53Z"
+}

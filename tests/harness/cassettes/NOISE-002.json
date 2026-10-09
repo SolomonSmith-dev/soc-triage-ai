@@ -1,0 +1,13 @@
+{
+  "case_id": "NOISE-002",
+  "prompt_sha256": "a2bbff1120de5842c85df1bf169460f92fa04d90fa635a8442af00815f50142f",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"medium\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\"],\n  \"summary\": \"Multiple failed SSH authentication attempts detected against root account from external IP 203.0.113.9, indicating potential brute force activity.\",\n  \"recommended_actions\": [\"Block source IP 203.0.113.9 at firewall if not legitimate\", \"Review all authentication logs for this IP across other systems\", \"Verify no successful authentication occurred from this source\", \"Ensure SSH hardening is in place (disable root login, implement fail2ban)\"],\n  \"escalate\": false,\n  \"reasoning\": \"Three consecutive failed password attempts for root account from single external IP matches high-priority pattern for SSH brute force attacks identified in threat intelligence. No successful authentication observed in this log sample, suggesting attack was unsuccessful. This is a common reconnaissance/credential access attempt that warrants blocking but does not require immediate escalation unless successful login is detected.\",\n  \"confidence_note\": \"T1110 inferred as brute force technique though not explicitly listed in provided context\"\n}\n```",
+  "usage": {
+    "input_tokens": 872,
+    "output_tokens": 253
+  },
+  "latency_seconds": 7.569,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:06Z"
+}

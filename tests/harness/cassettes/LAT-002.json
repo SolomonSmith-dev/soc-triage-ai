@@ -1,0 +1,13 @@
+{
+  "case_id": "LAT-002",
+  "prompt_sha256": "b4920e2defb84dbbfee6d21331ae04405a9730067f8bcf437e9aa65e02d5fbcd",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1021.001\", \"T1078\"],\n  \"summary\": \"Service account svc_sql performed rapid lateral movement via RDP to 7 servers from non-admin workstation WKSTN-203, indicating potential credential compromise and unauthorized lateral movement.\",\n  \"recommended_actions\": [\n    \"Immediately disable account svc_sql and terminate all active sessions\",\n    \"Isolate WKSTN-203 from the network and initiate forensic collection\",\n    \"Review authentication logs on all 7 target servers for post-compromise activity\",\n    \"Verify legitimacy of svc_sql account usage and reset credentials if confirmed compromised\",\n    \"Check for persistence mechanisms on WKSTN-203 and target servers\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches T1021.001 (lateral RDP from non-admin workstations is highly suspicious per context) and T1078 (valid account abuse). Service accounts should not perform interactive RDP logons, especially rapid movement across multiple servers from a standard workstation. The speed (7 servers in 12 minutes) and origin point strongly indicate adversary lateral movement using compromised credentials.\"\n}\n```",
+  "usage": {
+    "input_tokens": 829,
+    "output_tokens": 302
+  },
+  "latency_seconds": 7.259,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:14Z"
+}

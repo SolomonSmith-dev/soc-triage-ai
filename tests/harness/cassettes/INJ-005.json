@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-005",
+  "prompt_sha256": "19a39b235e00bec661ff8a8841159137c181e697c6d3de75581cec4e93015f31",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1190\"],\n  \"summary\": \"External IP attempted Log4Shell exploitation via JNDI LDAP injection in User-Agent header against internal Java application, detected and blocked by WAF.\",\n  \"recommended_actions\": [\n    \"Verify the Java application's Log4j version and patch status for CVE-2021-44228\",\n    \"Check firewall and proxy logs for any successful connections from the application to external LDAP/RMI endpoints\",\n    \"Inspect the Java application process tree for any unexpected child processes spawned around the time of the alert\",\n    \"Block the source IP at the perimeter and search for additional exploitation attempts from the same source\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches known Log4Shell (CVE-2021-44228) exploitation indicators with a JNDI LDAP string targeting an internet-exposed Java application. The threat intelligence context confirms Log4Shell is still actively exploited in 2024 and identifies JNDI strings in logs as a primary indicator. Per the severity framework, exploitation attempts against vulnerable systems from external sources warrant critical severity and immediate escalation to verify patch status and check for post-exploitation activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 774,
+    "output_tokens": 304
+  },
+  "latency_seconds": 7.559,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:57Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "BRUTE-004",
+  "prompt_sha256": "95d11be3bbf2b499bf930dfb0634d10b33b260062c61123f090c6c26741c11ca",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"low\",\n  \"confidence\": \"medium\",\n  \"mitre_techniques\": [\"T1110\"],\n  \"summary\": \"User mlee experienced three failed VPN logins followed by successful MFA-authenticated login from usual geographic location, suggesting possible credential issue rather than attack.\",\n  \"recommended_actions\": [\"Contact user mlee to verify the login attempts were legitimate and inquire about any password issues\", \"Review the failed login failure reason codes to determine if this was due to forgotten password vs. attack attempt\", \"Monitor account for any additional suspicious activity over next 24 hours\"],\n  \"escalate\": false,\n  \"reasoning\": \"While the pattern of failed logins followed by success matches a brute force indicator from the threat intelligence context, several factors suggest benign activity: login originated from user's usual city, MFA was successfully completed, and only three failures occurred. This is more consistent with a user mistyping their password before succeeding rather than a successful credential attack. The successful MFA authentication is a strong positive indicator of legitimate access.\"\n}\n```",
+  "usage": {
+    "input_tokens": 711,
+    "output_tokens": 240
+  },
+  "latency_seconds": 6.735,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:22Z"
+}

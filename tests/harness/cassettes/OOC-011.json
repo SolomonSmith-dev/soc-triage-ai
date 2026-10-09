@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-011",
+  "prompt_sha256": "5e84729ea0ffcbd61fcd8a8260773c497644ba06f576d04059d8a46647dbaead",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Message requesting guest wifi password for visiting auditors, unrelated to security threat detection.\",\n  \"recommended_actions\": [\"Route to IT helpdesk or facilities management for legitimate business request\", \"Verify requester identity if credentials will be shared\", \"No security incident response required\"],\n  \"escalate\": false,\n  \"reasoning\": \"This appears to be a legitimate internal business communication requesting guest network access credentials for auditors. The content does not match any threat indicators in the provided context (no failed logons, account manipulation, brute force attempts, or phishing indicators). This is out of scope for security alert triage.\"\n}\n```",
+  "usage": {
+    "input_tokens": 735,
+    "output_tokens": 175
+  },
+  "latency_seconds": 4.686,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:14Z"
+}

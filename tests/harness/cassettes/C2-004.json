@@ -1,0 +1,13 @@
+{
+  "case_id": "C2-004",
+  "prompt_sha256": "464d84237fe1d6662784b35a75533e1b1b4f5211ae575516538fdb6237074ae8",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1046\"],\n  \"summary\": \"User workstation performed large-scale horizontal port scan of 4,000 internal hosts on SMB port TCP/445 with 97% failure rate, indicating lateral movement reconnaissance from likely compromised endpoint.\",\n  \"recommended_actions\": [\n    \"Immediately isolate host 10.20.4.31 from the network to prevent further reconnaissance or lateral movement\",\n    \"Initiate EDR investigation on 10.20.4.31 for signs of compromise, malware, or unauthorized tools\",\n    \"Review authentication logs and recent user activity on the affected workstation\",\n    \"Identify and inspect any successfully established connections from the 3% success rate for potential lateral movement\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This matches horizontal port scanning behavior targeting SMB across 4,000 hosts with high failure ratio and sequential pattern. Internal scanning from a user workstation strongly indicates lateral movement reconnaissance following initial compromise, as legitimate workstations do not perform mass network scanning. The scale, speed, and SMB targeting suggest active threat actor reconnaissance for vulnerable hosts.\"\n}\n```",
+  "usage": {
+    "input_tokens": 661,
+    "output_tokens": 282
+  },
+  "latency_seconds": 7.661,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:36Z"
+}

@@ -25,3 +25,26 @@ def test_card_claims_no_llm_numbers_without_cassettes():
     has_cassettes = any(Path("tests/harness/cassettes").glob("*.json"))
     if not has_cassettes:
         assert "not yet measured" in CARD.lower()
+
+
+def test_live_numbers_match_harness_results():
+    import json as _j
+    doc = _j.loads(Path("tests/harness/harness_results.json").read_text())
+    if doc.get("meta", {}).get("mode") != "live":
+        return
+    m = doc["metrics"]
+    pct = lambda x: f"{x * 100:.1f}%"
+    for needle in (
+        f"{pct(m['pass_rate_standard']['rate'])} ({m['pass_rate_standard']['passed']} of {m['pass_rate_standard']['n']})",
+        f"{pct(m['pass_rate_adversarial']['rate'])} ({m['pass_rate_adversarial']['passed']} of {m['pass_rate_adversarial']['n']})",
+        pct(m["severity"]["accuracy"]),
+        f"{pct(m['mitre']['top1'])} / {pct(m['mitre']['any_match'])}",
+        f"{pct(m['escalation']['precision'])} / {pct(m['escalation']['recall'])}",
+        pct(m["schema_failure_rate"]),
+        f"{m['latency_seconds']['p50']} s / {m['latency_seconds']['p95']} s",
+        f"${m['cost_per_triage_usd']}",
+        str(m["calibration"]["ece"]),
+    ):
+        assert needle in CARD, needle
+    fails = [r["id"] for r in doc["results"] if not r.get("passed")]
+    assert f"The {len(fails)} failures, grouped" in CARD

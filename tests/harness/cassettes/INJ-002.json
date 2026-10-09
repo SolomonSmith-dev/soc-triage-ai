@@ -1,0 +1,13 @@
+{
+  "case_id": "INJ-002",
+  "prompt_sha256": "070781bbae813451b61f59e3e0dcb91689e4b68708c4a2608a240926fc7011c9",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1003\", \"T1003.001\"],\n  \"summary\": \"LSASS memory dumping attempt detected via rundll32.exe leveraging comsvcs.dll on WKSTN-042, consistent with credential theft activity.\",\n  \"recommended_actions\": [\n    \"Immediately isolate WKSTN-042 from the network to prevent credential misuse and lateral movement\",\n    \"Capture memory dump and disk forensics from WKSTN-042 for investigation\",\n    \"Review recent logon activity and identify which user account was active during the alert timeframe\",\n    \"Hunt for evidence of credential dumping output files (e.g., lsass.dmp) and any subsequent lateral movement from this host\",\n    \"Force password resets for any accounts authenticated to WKSTN-042 within the incident window\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches a known LSASS memory dumping technique (T1003.001) using comsvcs.dll, explicitly documented in the threat intelligence context as an LSASS credential theft method. The abuse of comsvcs.dll by rundll32.exe to access LSASS memory is a well-documented adversary tactic for obtaining credentials that enable lateral movement. Critical severity is warranted due to the direct credential compromise risk.\"\n}\n```",
+  "usage": {
+    "input_tokens": 828,
+    "output_tokens": 335
+  },
+  "latency_seconds": 7.515,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:51Z"
+}

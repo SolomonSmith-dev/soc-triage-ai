@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-005",
+  "prompt_sha256": "82f5728462a9b3e163e51e9e86cb985d36ddf308d0aca32aa0d93574128bfd50",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Non-security related facilities maintenance request incorrectly submitted as security alert.\",\n  \"recommended_actions\": [\"Forward to facilities/maintenance department\", \"Close alert as non-security matter\", \"Consider user awareness training on proper alert submission channels\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert contains no security-relevant content and describes a physical printer maintenance issue. It does not match any threat patterns in the available threat intelligence context and represents a misdirected facilities request rather than a security event.\"\n}\n```",
+  "usage": {
+    "input_tokens": 677,
+    "output_tokens": 151
+  },
+  "latency_seconds": 4.561,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:09Z"
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-002",
+  "prompt_sha256": "6b8ae23e84ecc526e8408b4bb51f4e11febb2a8ee6dc8f028b3521bfc66a07bd",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1059\", \"T1059.001\"],\n  \"summary\": \"Outlook.exe spawned PowerShell with encoded command (-enc flag), indicating potential malicious macro or phishing email execution.\",\n  \"recommended_actions\": [\n    \"Isolate WKSTN-018 from the network to prevent potential lateral movement or data exfiltration\",\n    \"Decode the base64 PowerShell command to determine malicious intent and identify IOCs\",\n    \"Review recent emails received by the user on WKSTN-018 for malicious attachments or links\",\n    \"Check for outbound network connections initiated by powershell.exe process\",\n    \"Collect full process tree and memory dump of powershell.exe for forensic analysis\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches multiple high-priority indicators from threat intelligence: Office application (Outlook) spawning PowerShell with encoded command flag (-enc), which is explicitly listed as suspicious. The parent-child process anomaly combined with encoded PowerShell execution strongly suggests malicious activity, likely from a phishing email or malicious attachment. This pattern is described as high-confidence malicious in the context provided.\"\n}\n```",
+  "usage": {
+    "input_tokens": 841,
+    "output_tokens": 305
+  },
+  "latency_seconds": 7.816,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:52Z"
+}

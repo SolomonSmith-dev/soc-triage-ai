@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-015",
+  "prompt_sha256": "c696175f22e1a1c5605dd4b3542deadcbd4fe42e807abb986fb29c7ea214b465",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Alert contains only gibberish characters with no actionable security content or indicators.\",\n  \"recommended_actions\": [\"Review alert generation logic for data corruption or parsing errors\", \"Check if alerting system is functioning properly\", \"Discard alert as non-actionable\"],\n  \"escalate\": false,\n  \"reasoning\": \"The alert body consists entirely of random special characters and symbols with no coherent data, log entries, or security indicators. This appears to be corrupted data or a malformed alert rather than legitimate security event. No threat intelligence context is applicable.\"\n}\n```",
+  "usage": {
+    "input_tokens": 712,
+    "output_tokens": 162
+  },
+  "latency_seconds": 4.241,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:14Z"
+}

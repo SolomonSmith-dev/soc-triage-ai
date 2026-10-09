@@ -1,0 +1,13 @@
+{
+  "case_id": "CRED-006",
+  "prompt_sha256": "84f4661343645c621e6276c892f5117e19b10c07eea2cd7d9e6b970f9c152bd0",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Mimikatz credential dumping tool detected in Downloads folder but quarantined before execution by Windows Defender.\",\n  \"recommended_actions\": [\n    \"Verify Windows Defender successfully quarantined the file and confirm no execution occurred in Event ID 4688 logs\",\n    \"Interview the developer to determine source of the Mimikatz binary (downloaded, emailed, or transferred)\",\n    \"Search endpoint for additional artifacts including browser download history, email attachments, and USB device connections\",\n    \"Review recent authentication logs and lateral movement indicators to confirm credentials were not compromised prior to detection\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"Mimikatz is a well-known credential theft tool and its presence indicates either a potential compromise or policy violation. While the file was quarantined before execution preventing immediate impact, the incident requires investigation to determine how the binary arrived on the system and whether any malicious activity preceded detection. The developer context suggests possible legitimate security testing but requires verification.\"\n}\n```",
+  "usage": {
+    "input_tokens": 824,
+    "output_tokens": 258
+  },
+  "latency_seconds": 6.901,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:49Z"
+}

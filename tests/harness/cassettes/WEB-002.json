@@ -1,0 +1,13 @@
+{
+  "case_id": "WEB-002",
+  "prompt_sha256": "0c59bf4adf609d3deb1dcd400f94023b66b9998970c86e12a13bf768e2467a57",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1190\"],\n  \"summary\": \"Active SQL injection attack detected against /products endpoint from 203.0.113.50 with UNION SELECT and time-based blind SQL injection payloads resulting in application errors.\",\n  \"recommended_actions\": [\n    \"Block source IP 203.0.113.50 at firewall/WAF immediately\",\n    \"Review all web server and database logs for evidence of successful data extraction or compromise from this source\",\n    \"Verify web application input validation and parameterized queries are implemented for the /products endpoint\",\n    \"Check for any unusual database activity, new accounts, or privilege escalations during the attack timeframe\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This represents exploitation attempts against an internet-exposed web application using SQL injection techniques (UNION SELECT for data extraction, sleep() for time-based blind injection). The 40 HTTP 500 errors indicate the attacker is actively probing the application. Per threat intelligence context, this qualifies as critical severity due to the vulnerable system being internet-exposed and under active exploitation attempt.\",\n  \"mitre_attack_mapping\": \"T1190 - Exploit Public-Facing Application\"\n}\n```",
+  "usage": {
+    "input_tokens": 696,
+    "output_tokens": 301
+  },
+  "latency_seconds": 7.589,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:05Z"
+}

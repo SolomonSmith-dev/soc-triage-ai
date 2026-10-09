@@ -1,0 +1,13 @@
+{
+  "case_id": "OOC-006",
+  "prompt_sha256": "a0567a952042718c953c9abbea4ee4c5932bdf5b73c5b22e6a611a1920e041a5",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Alert content is a weather warning and not a security event; completely out of scope for SOC triage.\",\n  \"recommended_actions\": [\"Mark alert as false positive\", \"Review alert ingestion pipeline to prevent non-security events from entering SIEM\", \"No further security analysis required\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert describes a severe thunderstorm warning with no security relevance whatsoever. It contains no indicators of compromise, malicious activity, or any cybersecurity threat. This appears to be a misconfiguration in the alert ingestion process.\"\n}\n```",
+  "usage": {
+    "input_tokens": 708,
+    "output_tokens": 169
+  },
+  "latency_seconds": 4.816,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:10Z"
+}

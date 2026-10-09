@@ -1,0 +1,13 @@
+{
+  "case_id": "EXEC-004",
+  "prompt_sha256": "8c63c0522e1286078ed1d03d757d08f097a40cd4a2f24248d7487f24bd0a5818",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1059\"],\n  \"summary\": \"wscript.exe executed a JavaScript file from Downloads folder that arrived via email attachment in a ZIP archive, matching phishing delivery and script execution patterns.\",\n  \"recommended_actions\": [\"Isolate the affected endpoint immediately to prevent potential lateral movement\", \"Inspect the email source and block sender domain/address\", \"Analyze invoice_details.js file and check for additional process spawning or network connections from wscript.exe\", \"Search for other users who received the same email attachment across the organization\"],\n  \"escalate\": true,\n  \"reasoning\": \"This matches multiple high-confidence indicators from threat intelligence: email-delivered attachment in ZIP archive (phishing delivery method), script interpreter execution (T1059 Command and Scripting Interpreter), and execution from Downloads folder. The combination of email delivery vector and script execution from a user directory indicates likely phishing attack requiring immediate investigation.\",\n  \"confidence_factors\": \"ZIP archive delivery evades scanning, .js execution via wscript is common malware technique, Downloads folder indicates user interaction with email attachment\"\n}\n```",
+  "usage": {
+    "input_tokens": 862,
+    "output_tokens": 271
+  },
+  "latency_seconds": 7.611,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:58Z"
+}

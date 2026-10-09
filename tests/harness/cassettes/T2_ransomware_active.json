@@ -1,0 +1,13 @@
+{
+  "case_id": "T2_ransomware_active",
+  "prompt_sha256": "465d2db48c992d8151d6ce6690424f1c0e7fd583a5bef40d1ebc76053b294a07",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1486\", \"T1490\"],\n  \"summary\": \"Active LockBit ransomware encryption in progress across multiple file servers with confirmed shadow copy deletion and widespread file encryption.\",\n  \"recommended_actions\": [\n    \"Immediately isolate affected file servers from the network to prevent further encryption spread\",\n    \"Identify and terminate any active encryption processes on affected systems\",\n    \"Preserve forensic evidence including memory dumps and process listings before shutdown\",\n    \"Activate incident response team and notify leadership for ransomware response procedures\",\n    \"Identify and contain any lateral movement paths or compromised credentials used by the attacker\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert exhibits multiple definitive indicators of active ransomware encryption: thousands of file modifications per minute, .lockbit file extension changes, ransom notes in every directory, and Volume Shadow Copy deletion via vssadmin. These match the encryption phase and pre-encryption indicators for LockBit ransomware. The attack is currently in progress and requires immediate containment to minimize data loss and prevent spread to additional systems.\",\n  \"mitre_attack_mapping\": {\n    \"T1486\": \"Data Encrypted for Impact - mass file encryption with .lockbit extension\",\n    \"T1490\": \"Inhibit System Recovery - Volume Shadow Copy deletion via vssadmin\"\n  }\n}\n```",
+  "usage": {
+    "input_tokens": 933,
+    "output_tokens": 339
+  },
+  "latency_seconds": 7.488,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:58Z"
+}

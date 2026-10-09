@@ -1,0 +1,13 @@
+{
+  "case_id": "PERSIST-005",
+  "prompt_sha256": "776e201f1259aa2668f9b9d738f0dcaf30fd9a13cdc10d42b4a381fb309b48e3",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1053.003\", \"T1053\"],\n  \"summary\": \"Unauthorized SSH key installation and cron job creation by www-data user on database server srv-db-03 indicates persistence mechanism establishment following likely web application compromise.\",\n  \"recommended_actions\": [\n    \"Immediately isolate srv-db-03 from the network to prevent lateral movement\",\n    \"Remove the unauthorized SSH key from /root/.ssh/authorized_keys and the malicious cron job from /etc/cron.d\",\n    \"Review all recent www-data process execution and web server logs for initial compromise vector (likely web shell)\",\n    \"Audit all user accounts, SSH keys, and scheduled tasks across the environment for similar compromise indicators\",\n    \"Initiate incident response procedures and preserve forensic evidence including memory dump and disk image\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert shows classic Linux attacker persistence behavior: SSH key installation for backdoor access and cron job creation for persistent execution. The www-data user context strongly suggests initial web application compromise followed by privilege escalation and persistence establishment. The combination of root-level SSH access and scheduled task creation on a database server represents a critical security breach requiring immediate incident response.\"\n}\n```",
+  "usage": {
+    "input_tokens": 735,
+    "output_tokens": 307
+  },
+  "latency_seconds": 8.053,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:34Z"
+}

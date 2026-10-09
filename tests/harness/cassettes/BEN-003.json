@@ -1,0 +1,13 @@
+{
+  "case_id": "BEN-003",
+  "prompt_sha256": "e0c15a13282e5cd580dda0e78b7ee1e5e331336e03f23bed19cb860fc0918205",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"Legitimate helpdesk password reset activity for 85 accounts during business hours with approved change ticket HD-9921 following new password policy rollout.\",\n  \"recommended_actions\": [\"Verify ticket HD-9921 exists and authorized the password resets\", \"Confirm the 85 affected accounts align with the ticket scope\", \"Spot-check that reset activity occurred within the timeframe specified in the change ticket\"],\n  \"escalate\": false,\n  \"reasoning\": \"Event ID 4724 indicates password reset operations, which are flagged in the threat intelligence as potentially malicious for unauthorized account manipulation. However, this activity has legitimate business context: authorized helpdesk accounts performed the resets during business hours with an approved change ticket tied to a policy rollout. This represents normal IT operations rather than adversary activity.\"\n}\n```",
+  "usage": {
+    "input_tokens": 704,
+    "output_tokens": 219
+  },
+  "latency_seconds": 5.803,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:29Z"
+}

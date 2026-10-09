@@ -1,7 +1,7 @@
 # SOC Triage AI
 
 <!-- BADGES:BEGIN -->
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) [![CI](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml) ![harness cases](https://img.shields.io/badge/harness%20cases-100-informational) ![retrieval hit@4](https://img.shields.io/badge/retrieval%20hit%404-0.893-success) ![refusal precision](https://img.shields.io/badge/refusal%20precision-1.0-success) ![live harness](https://img.shields.io/badge/live%20harness-run%20pending-lightgrey)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) [![CI](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml) ![harness cases](https://img.shields.io/badge/harness%20cases-100-informational) ![retrieval hit@4](https://img.shields.io/badge/retrieval%20hit%404-0.893-success) ![refusal precision](https://img.shields.io/badge/refusal%20precision-1.0-success) ![live harness](https://img.shields.io/badge/live%20harness-76%2F100%20passing-yellow)
 <!-- BADGES:END -->
 
 **A SOC alert triage assistant that cites its evidence and refuses to answer when it has none.**
@@ -24,10 +24,13 @@ Paste a security alert. It returns severity, MITRE ATT&CK techniques, recommende
 | Retrieval hit@4 | 0.893 (84 labeled queries) | `retrieval_results.json` |
 | Retrieval recall@4 / MRR | 0.374 (ceiling 0.868) / 0.737 | `retrieval_results.json` |
 | Refusal precision / recall at 0.20 | 1.0 / 0.438 (7 of 16 out-of-corpus refused) | `retrieval_results.json` |
-| Original 7-case live run (July 2026) | 7/7 passed | `harness_results.json` |
-| Severity accuracy, MITRE top-1 and any-match, injection resistance, schema-failure rate, latency, cost per triage (100 cases) | not recorded yet | needs one live run |
-
-The LLM-in-the-loop rows fill in from one recorded run: `python -m tests.harness.test_harness --record --update-baseline`, then `python -m tests.harness.readme_results`.
+| Standard / adversarial pass rate | 81.7% / 67.5% | `harness_results.json` |
+| Severity accuracy (in accepted range) | 95.0% | `harness_results.json` |
+| MITRE top-1 / any-match | 78.3% / 81.2% | `harness_results.json` |
+| Prompt injection | 7 of 10 cases pass; canary leaked in 0.0% of cases | `harness_results.json` |
+| Schema-failure rate | 1.1% | `harness_results.json` |
+| Latency p50 / p95 | 7.26 s / 8.57 s | `harness_results.json` |
+| Cost per triage (estimated from token usage) | $0.00645 | `harness_results.json` |
 <!-- RESULTS:END -->
 
 Full tables, the threshold sweep and every documented failure case are in [`model_card.md`](model_card.md) and [`tests/harness/RESULTS.md`](tests/harness/RESULTS.md). Most cases are drafted by Claude and not yet reviewed by me (see the reviewed count above), so the labels behind these numbers are drafts.
@@ -66,7 +69,7 @@ What the numbers say about it, measured on the labeled query set: at the 0.20 th
 
 ## What I would do next
 
-1. Record the 100-case live run, review the drafted cases, and fill the pending rows above.
+1. Review the drafted cases, then fix what the live run found: empty technique lists, technique IDs outside the corpus, and the fail-open reply.
 2. Revisit the 0.20 threshold with the sweep (0.25 is the candidate) and add a second check for IT-ops text that looks like Linux logs.
 3. Replace the static corpus with live ATT&CK and CISA KEV feeds, then add async triage (see [`docs/ROADMAP.md`](docs/ROADMAP.md)).
 
@@ -184,8 +187,10 @@ This input scored 0.275 against the corpus, above the 0.20 retrieval threshold, 
 
 ## Limitations
 
-- **LLM metrics on the 100 cases are not recorded yet.** The harness, cassette format and CI gate are built and tested; no live run has been made against the full suite.
-- **Refusal recall is 0.44 at the current threshold.** Out-of-corpus text that resembles log content gets through to the model.
+- **Overconfident.** High-confidence answers were right 74.7% of the time (87 cases), against 90% nominal.
+- **Technique IDs.** In the live run, 5 cases returned severity above `informational` with no technique, which the prompt forbids, and 7 cases used IDs that are not in the retrieved corpus.
+- **Fail-open on a bad model reply.** One reply came back empty and the system answered `informational`, `escalate: false` for an alert that should escalate. Details and the proposed fix are in `model_card.md`.
+- **Refusal recall is 0.44 at the current threshold.** 8 of 15 out-of-corpus inputs reached the model in the live run. All 8 were answered `informational` with no escalation, so the end result was safe, but the guardrail did not fire.
 - **The suite is mostly Claude-drafted.** The Results table shows how many cases a person has reviewed.
 - **Static corpus.** 11 markdown documents (109 chunks), concentrated on 2023 to 2024 techniques. There is no cloud-identity coverage.
 - **Streamlit file watcher noise.** `sentence-transformers` triggers harmless `ModuleNotFoundError` warnings under Streamlit's file watcher. Use `--server.fileWatcherType=none`.

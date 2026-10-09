@@ -1,0 +1,13 @@
+{
+  "case_id": "BEN-004",
+  "prompt_sha256": "2b10bb048a976b59df4d434bf53ac0af78f648e8d9bca130c636fb85bd394501",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"informational\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [],\n  \"summary\": \"CFO logged in from new country with valid MFA on managed device following pre-filed travel notice, consistent with legitimate business travel.\",\n  \"recommended_actions\": [\"Document event in travel log for audit trail\", \"Verify travel notice details match sign-in location and timeframe\", \"No further action required unless additional suspicious activity observed\"],\n  \"escalate\": false,\n  \"reasoning\": \"This alert exhibits an expected behavior pattern for authorized travel. All risk indicators are mitigated: MFA was successfully used, the device is corporate-managed, and a travel notice was proactively filed. The threat intelligence context identifies login from new geography as suspicious, but the presence of pre-authorization and strong authentication controls make this a legitimate business activity rather than compromise.\"\n}\n```",
+  "usage": {
+    "input_tokens": 752,
+    "output_tokens": 202
+  },
+  "latency_seconds": 6.08,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:36:29Z"
+}

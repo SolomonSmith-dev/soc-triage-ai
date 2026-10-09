@@ -1,0 +1,13 @@
+{
+  "case_id": "RANSOM-002",
+  "prompt_sha256": "4510fb3a93aaf9480f658ae0e7804cbf149b394f393273ba7304249e986359f0",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1570\"],\n  \"summary\": \"Host FS-02 exhibited pre-encryption ransomware indicators including mass SMB share enumeration across 40 hosts and Volume Shadow Copy deletion by svc_backup account.\",\n  \"recommended_actions\": [\n    \"Immediately isolate host FS-02 from the network to prevent potential lateral movement and encryption\",\n    \"Disable svc_backup account credentials and investigate for credential compromise\",\n    \"Check all 40 enumerated hosts for suspicious activity, unauthorized file modifications, or additional shadow copy deletions\",\n    \"Verify backup integrity on Veeam, Commvault, or other backup systems before potential encryption event\",\n    \"Monitor for file extension changes and ransom note deployment across the environment\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This activity matches multiple pre-encryption ransomware indicators from the threat intelligence context: mass SMB share enumeration and Volume Shadow Copy deletion via vssadmin. According to the severity classification, pre-encryption indicators on multiple hosts (40 enumerated targets) warrant high severity. The use of a service account (svc_backup) for destructive shadow copy deletion suggests credential compromise and imminent ransomware deployment.\"\n}\n```",
+  "usage": {
+    "input_tokens": 846,
+    "output_tokens": 307
+  },
+  "latency_seconds": 7.249,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:38:50Z"
+}

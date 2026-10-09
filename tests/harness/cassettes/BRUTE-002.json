@@ -1,0 +1,13 @@
+{
+  "case_id": "BRUTE-002",
+  "prompt_sha256": "8edebe089e9ebe86ee8f3a33c4d3593c1fd18cb6efcc41781e3d71759342ed63",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"high\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1110\", \"T1110.003\"],\n  \"summary\": \"Password spraying attack detected from single source IP 198.51.100.23 targeting 600 distinct accounts over 40 minutes with no successful authentications.\",\n  \"recommended_actions\": [\n    \"Block source IP 198.51.100.23 at firewall/perimeter to prevent continued attack attempts\",\n    \"Review all 600 targeted accounts for any successful authentications from unusual sources in extended timeframe\",\n    \"Verify account lockout policies are properly configured to mitigate brute force attempts\",\n    \"Check for any successful authentications from 198.51.100.23 against other systems or services\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"This alert matches the threat intelligence definition of password spraying (T1110.003): a single source IP attempting one password against many accounts to evade lockout policies. The high volume of 600 accounts targeted over 40 minutes with consistent 4625 events (failed logon with status 0xC000006A indicating bad username or password) confirms malicious intent. While no accounts were compromised, this represents active credential access attempts requiring immediate response and escalation.\"\n}\n```",
+  "usage": {
+    "input_tokens": 685,
+    "output_tokens": 309
+  },
+  "latency_seconds": 7.324,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:37:22Z"
+}

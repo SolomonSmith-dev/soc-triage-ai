@@ -1,0 +1,13 @@
+{
+  "case_id": "WEB-005",
+  "prompt_sha256": "3a8bd42872ff1d25fce52abe481973c31b41d6be5e7b9ecf5d6763025901b346",
+  "model": "claude-sonnet-4-5",
+  "response_text": "```json\n{\n  \"severity\": \"critical\",\n  \"confidence\": \"high\",\n  \"mitre_techniques\": [\"T1190\"],\n  \"summary\": \"Exploitation of unpatched Citrix NetScaler appliance vulnerable to CVE-2023-4966 (Citrix Bleed) enabling session token theft and MFA bypass.\",\n  \"recommended_actions\": [\n    \"Immediately isolate the affected NetScaler appliance from external network access\",\n    \"Review authentication logs for session hijacking, impossible travel patterns, and post-auth activity without corresponding login events\",\n    \"Invalidate all active sessions on the affected appliance and force re-authentication\",\n    \"Apply emergency patch for CVE-2023-4966 and conduct forensic analysis for IOCs associated with LockBit, Medusa, or other ransomware affiliates\"\n  ],\n  \"escalate\": true,\n  \"reasoning\": \"The alert indicates active exploitation attempts of CVE-2023-4966 against an unpatched NetScaler appliance from an external IP. This vulnerability has been exploited by ransomware groups including LockBit and Medusa to steal session tokens and bypass MFA. The combination of repeated requests to the vulnerable path and unpatched status represents imminent risk of initial access and credential theft.\"\n}\n```",
+  "usage": {
+    "input_tokens": 833,
+    "output_tokens": 305
+  },
+  "latency_seconds": 6.667,
+  "git_sha": "4f9aec7",
+  "recorded_at": "2026-10-09T04:39:07Z"
+}
