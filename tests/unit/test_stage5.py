@@ -20,7 +20,13 @@ class Client:
         return SimpleNamespace(content=content, usage=SimpleNamespace(input_tokens=1, output_tokens=1))
 
 
+CORPUS = [{"id": "m", "source": "m.md", "text": "## T1486 Data Encrypted for Impact. T1490 Inhibit System Recovery."},
+          {"id": "p", "source": "p.md", "text": CTX}]
+
+
 class Retriever:
+    chunks = CORPUS
+
     def __init__(self, hits=True):
         self.hits = hits
 
@@ -41,6 +47,20 @@ def test_ungrounded_ids_are_dropped_and_grounded_ones_kept():
     r, _, g = run(Client(reply(techs=("T1566.002", "T1136", "T1218.005", "T1204"))))
     assert r["mitre_techniques"] == ["T1566.002", "T1204"] and not g
     assert r["severity"] == "high" and r["escalate"] is True and r["confidence"] == "high"
+
+
+def test_id_in_the_corpus_but_not_in_the_retrieved_chunks_is_kept():
+    r, _, _ = run(Client(reply(techs=("T1490", "T1486"))))  # only in a chunk that was not retrieved
+    assert r["mitre_techniques"] == ["T1490", "T1486"]
+
+
+def test_without_exposed_chunks_the_retrieved_context_is_the_fallback():
+    class Bare:
+        def retrieve(self, query, top_k=4, min_score=0.20):
+            return [({"id": "c", "source": "p.md", "text": CTX}, 0.5)]
+
+    r, _, _ = SOCTriage(client=Client(reply(techs=("T1566", "T1486"))), retriever=Bare()).triage_with_context("a")
+    assert r["mitre_techniques"] == ["T1566"]
 
 
 def test_parent_in_context_grounds_a_subtechnique_but_not_the_reverse_for_other_families():
