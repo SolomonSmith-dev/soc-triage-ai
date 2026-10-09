@@ -34,6 +34,13 @@ def complete_run(metrics: dict, filtered: bool) -> bool:
     return not filtered and metrics["evaluated"] == metrics["total_cases"]
 
 
+def rescore_meta(prev: dict, git_sha: str, now: str) -> dict | None:
+    """Meta for a replay-only rescore. Only a prior live run can be rescored."""
+    if prev.get("mode") != "live":
+        return None
+    return {**prev, "rescored_at": now, "rescored_git_sha": git_sha}
+
+
 def load_baseline(path: Path = BASELINE) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 
