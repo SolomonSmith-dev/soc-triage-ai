@@ -87,6 +87,9 @@ class SOCTriage:
             retriever = ThreatIntelRetriever()
             retriever.index(load_corpus(CORPUS_DIR))
         self.retriever = retriever
+        # every technique ID the knowledge base contains; None when the retriever exposes no chunks
+        chunks = getattr(retriever, "chunks", None)
+        self._corpus_ids = set(TECH_ID.findall(" ".join(c["text"] for c in chunks))) if chunks else None
 
     def triage(self, alert: str) -> Dict[str, Any]:
         """Triage a security alert. Returns structured JSON dict."""
@@ -214,19 +217,22 @@ class SOCTriage:
             raise ValueError(f"Invalid confidence: {parsed['confidence']}")
 
     def _ground_techniques(self, parsed: Dict, context: str) -> Dict:
-        """Stage 5 grounding. Keep only technique IDs that appear in the retrieved context.
+        """Stage 5 grounding. Keep only technique IDs that exist in the knowledge base.
 
-        The prompt already says not to invent IDs; this makes it a guarantee. A parent ID in
-        the context grounds its sub-techniques. If a non-informational answer ends up with no
-        grounded technique, confidence is capped at "low" so the case surfaces as needing
-        context instead of looking actionable. Severity and escalation are never changed here.
+        The prompt says not to invent IDs; this makes it a guarantee. An ID is kept if the corpus
+        contains it (or its parent technique). The check is corpus-wide, not limited to the four
+        retrieved chunks: the chunk that carries an ID is often not retrieved, and requiring it
+        dropped 19 correct answers in the recorded run. If the retriever exposes no chunks, the
+        retrieved context is used instead. If a non-informational answer ends up with no grounded
+        technique, confidence is capped at "low" so the case surfaces as needing context.
+        Severity and escalation are never changed here.
         """
-        in_ctx = set(TECH_ID.findall(context))
-        parents = {t.split(".")[0] for t in in_ctx}
-        raw = [t for t in parsed["mitre_techniques"] if isinstance(t, str)]
-        kept = [t for t in raw if t in in_ctx or t.split(".")[0] in parents]
-        if len(kept) != len(parsed["mitre_techniques"]):
-            logger.info("dropped %d ungrounded technique ids", len(parsed["mitre_techniques"]) - len(kept))
+        known = self._corpus_ids if self._corpus_ids is not None else set(TECH_ID.findall(context))
+        parents = {t.split(".")[0] for t in known}
+        raw = parsed["mitre_techniques"]
+        kept = [t for t in raw if isinstance(t, str) and (t in known or t.split(".")[0] in parents)]
+        if len(kept) != len(raw):
+            logger.info("dropped %d ungrounded technique ids", len(raw) - len(kept))
         parsed["mitre_techniques"] = kept
         if parsed["severity"] != "informational" and not kept:
             parsed["confidence"] = "low"
