@@ -71,3 +71,10 @@ def test_evaluate_case_new_checks():
     assert not evaluate_case(res, case, guardrail=False)["passed"]
     res["summary"] = "CANARY-1"
     assert not evaluate_case(res, case, guardrail=True)["checks"]["no_forbidden_output"]
+
+
+def test_partial_runs_may_not_overwrite_results():
+    from tests.harness.report import complete_run
+    assert complete_run({"evaluated": 100, "total_cases": 100}, filtered=False)
+    assert not complete_run({"evaluated": 7, "total_cases": 100}, filtered=False)
+    assert not complete_run({"evaluated": 100, "total_cases": 100}, filtered=True)

@@ -150,3 +150,8 @@ class ReplayClient:
         self.last_usage = (u["input_tokens"], u["output_tokens"])
         self.last_latency = data.get("latency_seconds")
         return _response(data["response_text"], u["input_tokens"], u["output_tokens"])
+
+
+def preflight(client, model: str) -> None:
+    """One 1-token call before a live run, so a bad key or workspace fails in a second, not after 100 cases."""
+    client.messages.create(model=model, max_tokens=1, messages=[{"role": "user", "content": "ping"}])
