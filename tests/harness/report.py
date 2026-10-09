@@ -29,6 +29,11 @@ def write_results(path: Path, meta: dict, results: list[dict], metrics: dict) ->
     path.write_text(json.dumps({"meta": meta, "metrics": metrics, "results": results}, indent=2) + "\n", encoding="utf-8")
 
 
+def complete_run(metrics: dict, filtered: bool) -> bool:
+    """Only a full, fully evaluated run may overwrite harness_results.json or the baseline."""
+    return not filtered and metrics["evaluated"] == metrics["total_cases"]
+
+
 def load_baseline(path: Path = BASELINE) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 

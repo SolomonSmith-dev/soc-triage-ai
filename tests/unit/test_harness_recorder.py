@@ -91,3 +91,14 @@ def test_budget_cap(tmp_path):
     assert b.spent_usd == pytest.approx(estimate_cost(1000, 200))
     with pytest.raises(BudgetExceededError):
         c.messages.create(model="m", messages=[{"role": "user", "content": "x"}])
+
+
+def test_preflight_raises_on_bad_key_before_any_case_runs():
+    from tests.harness.recorder import preflight
+
+    class Bad:
+        messages = SimpleNamespace(create=lambda **kw: (_ for _ in ()).throw(RuntimeError("invalid x-api-key")))
+
+    with pytest.raises(RuntimeError):
+        preflight(Bad(), "m")
+    preflight(FakeInner(), "m")  # a working client passes

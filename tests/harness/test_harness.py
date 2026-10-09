@@ -14,9 +14,9 @@ import time
 
 from tests.harness.loader import CaseLoadError, load_cases
 from tests.harness.metrics import compute_metrics
-from tests.harness.recorder import Budget, _git_sha
+from tests.harness.recorder import Budget, _git_sha, preflight
 from tests.harness.report import (
-    BASELINE, RESULTS, baseline_snapshot, diff_text, load_baseline, write_results,
+    BASELINE, RESULTS, baseline_snapshot, complete_run, diff_text, load_baseline, write_results,
 )
 from tests.harness.runner import build_retriever, evaluate_case, run_all  # noqa: F401  (evaluate_case re-exported)
 
@@ -66,7 +66,13 @@ def main(argv: list[str] | None = None) -> int:
             print("ANTHROPIC_API_KEY not set. Use --replay for an offline run.")
             return 2
         from anthropic import Anthropic
+        from triage_engine.triage import MODEL
         real_client, budget = Anthropic(api_key=key), Budget(args.max_cost_usd)
+        try:
+            preflight(real_client, MODEL)
+        except Exception as e:
+            print(f"preflight call failed, nothing was run: {type(e).__name__}: {e}")
+            return 2
 
     print(f"{len(cases)} cases, mode={'replay' if replay else 'record'}")
     t0 = time.time()
@@ -85,7 +91,10 @@ def main(argv: list[str] | None = None) -> int:
     if budget:
         print(f"live spend estimate: ${budget.spent_usd:.4f} ({budget.tokens_in} in, {budget.tokens_out} out tokens)")
 
-    if not replay and not filtered:
+    if not replay and not complete_run(metrics, filtered):
+        print("not writing harness_results.json or baseline.json: the run was filtered or not every case was evaluated")
+        return 1
+    if not replay:
         meta = {"mode": "live", "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "git_sha": _git_sha(), "model": "claude-sonnet-4-5",
                 "spend_usd_estimate": round(budget.spent_usd, 4) if budget else None,
