@@ -81,12 +81,12 @@ def main(argv: list[str] | None = None) -> int:
     retriever = build_retriever()
     print(f"retriever ready in {time.time() - t0:.1f}s")
     results = run_all(cases, retriever, "replay" if replay else "record", workers=args.workers,
-                      real_client=real_client, budget=budget)
+                      progress=True, real_client=real_client, budget=budget)
     metrics = compute_metrics(results, cases)
 
     for r in results:
-        tag = {"ok": "PASS" if r.get("passed") else "FAIL"}.get(r["status"], r["status"].upper())
-        print(f"  [{tag}] {r['id']} {r.get('error', '')}")
+        if r.get("error"):
+            print(f"  [{r['status'].upper()}] {r['id']} {r['error']}")
     print(f"\nevaluated {metrics['evaluated']}/{metrics['total_cases']}  unrecorded {metrics['unrecorded']}  "
           f"stale {metrics['stale']}  errors {metrics['errors']}")
     print(f"standard {metrics['pass_rate_standard']}  adversarial {metrics['pass_rate_adversarial']}")

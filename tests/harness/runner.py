@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -100,11 +101,24 @@ def run_case(case: Case, retriever, mode: str, cassette_dir: Path = CASSETTE_DIR
     }
 
 
-def run_all(cases: list[Case], retriever, mode: str, workers: int = 1, **kw) -> list[dict]:
+def run_all(cases: list[Case], retriever, mode: str, workers: int = 1, progress: bool = False, **kw) -> list[dict]:
+    """Run every case. With progress=True print one line per finished case, so a live run is not silent."""
+    done = {"n": 0}
+    lock = threading.Lock()
+
+    def one(c: Case) -> dict:
+        r = run_case(c, retriever, mode, **kw)
+        if progress:
+            with lock:
+                done["n"] += 1
+                tag = {"ok": "PASS" if r.get("passed") else "FAIL"}.get(r["status"], r["status"].upper())
+                print(f"  [{done['n']}/{len(cases)}] {tag} {r['id']}", flush=True)
+        return r
+
     if workers <= 1 or mode != "record":
-        return [run_case(c, retriever, mode, **kw) for c in cases]
+        return [one(c) for c in cases]
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(lambda c: run_case(c, retriever, mode, **kw), cases))
+        return list(pool.map(one, cases))
 
 
 def build_retriever():
