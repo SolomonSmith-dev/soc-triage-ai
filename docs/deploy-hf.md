@@ -8,6 +8,8 @@ How it works: the Space repo holds two files (`Dockerfile`, `README.md`). The Do
 
 Use `/usr/bin/grep`, `/bin/ls`, `/bin/cp -f` as written. Work under `~/Projects`, not Desktop or Downloads.
 
+> Deploy after the technique-context change is merged and the harness re-recorded, so the demo runs the engine the published numbers describe. Use the merged `main` commit as `REPO_REF`.
+
 ## 0. Merge the PRs in order
 
 1. Merge the scope PR, then the harness PR, then the deploy PR into `main` (each one is stacked on the previous).

@@ -18,7 +18,7 @@ from typing import Dict, Any
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
-from triage_engine.rag.corpus import load_corpus
+from triage_engine.rag.corpus import load_corpus, section_technique_ids
 from triage_engine.rag.retriever import ThreatIntelRetriever
 
 CORPUS_DIR = str(Path(__file__).parent / "data" / "threat_intel")
@@ -90,6 +90,7 @@ class SOCTriage:
         # every technique ID the knowledge base contains; None when the retriever exposes no chunks
         chunks = getattr(retriever, "chunks", None)
         self._corpus_ids = set(TECH_ID.findall(" ".join(c["text"] for c in chunks))) if chunks else None
+        self._section_ids = section_technique_ids(chunks) if chunks else {}
 
     def triage(self, alert: str) -> Dict[str, Any]:
         """Triage a security alert. Returns structured JSON dict."""
@@ -134,7 +135,7 @@ class SOCTriage:
             )
 
         context = "\n\n".join(
-            f"[Source: {chunk['source']} | Similarity: {score:.2f}]\n{chunk['text']}"
+            f"[Source: {chunk['source']} | Similarity: {score:.2f}]\n{chunk['text']}{self._section_note(chunk)}"
             for chunk, score in hits
         )
         avg_score = sum(s for _, s in hits) / len(hits)
@@ -179,6 +180,15 @@ class SOCTriage:
                 hits,
                 True,
             )
+
+    def _section_note(self, chunk: Dict) -> str:
+        """Technique IDs named in this chunk's section that the chunk text itself does not contain.
+
+        Without this the model often sees a description of a technique but not its ID, because the
+        ID sits in a neighbouring paragraph, and answers from memory instead of from the context.
+        """
+        missing = [t for t in self._section_ids.get(chunk["id"], []) if t not in chunk["text"]]
+        return f"\n(Techniques named in this section: {', '.join(missing)})" if missing else ""
 
     def _parse_json(self, raw: str) -> Dict:
         """Extract JSON object from LLM response, handling stray markdown."""

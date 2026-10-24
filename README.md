@@ -188,6 +188,7 @@ This input scored 0.275 against the corpus, above the 0.20 retrieval threshold, 
 ## Limitations
 
 - **Overconfident.** High-confidence answers were right 74.7% of the time (87 cases), against 90% nominal.
+- **Technique mapping is only partly retrieval-grounded.** In the recorded run, no retrieved chunk contained the expected technique ID in 33 of 69 cases, and accuracy was lower there (21 of 33 matched, against 35 of 36 when an ID was present). A fix that attaches each chunk's section IDs to the prompt is in the code and awaiting a live re-record.
 - **Technique IDs.** In the live run, 5 cases returned severity above `informational` with no technique, which the prompt forbids, and 7 cases used IDs that are not in the retrieved corpus.
 - **Fail-open on a bad model reply.** One reply came back empty and the system answered `informational`, `escalate: false` for an alert that should escalate. Details and the proposed fix are in `model_card.md`.
 - **Refusal recall is 0.44 at the current threshold.** 8 of 15 out-of-corpus inputs reached the model in the live run. All 8 were answered `informational` with no escalation, so the end result was safe, but the guardrail did not fire.
