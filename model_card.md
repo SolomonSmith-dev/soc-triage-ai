@@ -147,6 +147,17 @@ The retrieval table above counts 16 should-refuse queries and the triage table c
 
 INJ-009 has no cassette because the recorder at the time failed on an empty reply before writing it. The recorder now stores empty replies. Until that case is re-recorded, replay reports it as unrecorded and CI skips it.
 
+### How much of the technique mapping is retrieval-grounded
+
+The pipeline says the model uses only the retrieved context, but technique IDs were mostly not in it. Only 22 of 109 corpus chunks contain a technique ID, because the ID usually sits in a header or mapping paragraph next to the paragraph that gets retrieved. Using the committed retrieval scores and live results (`python -m tests.harness.technique_coverage`, snapshot in `tests/harness/analysis/technique_coverage_2026-10-09.json`), for the 69 cases that expect a technique:
+
+- In 33 of 69 cases, no top-4 chunk contained an expected technique ID. In 19 of those, none of the top 10 did either.
+- When a retrieved chunk carried the ID, the answer matched an expected technique in 35 of 36 cases. When none did, it matched in 21 of 33.
+
+So roughly half the technique mappings in the recorded run came from the model's own knowledge, and accuracy was lower when it had to rely on that. The README's "grounded" description applies fully to severity reasoning and evidence, and only partly to MITRE mapping.
+
+**Change made in response (stage 4, not yet measured live).** The prompt context now appends, to each retrieved chunk, the technique IDs named in that chunk's section or, failing that, in its document's "MITRE Mapping" list, when the chunk text does not already contain them. It is derived from the corpus alone. 72 of 109 chunks now carry IDs. Counted offline against the same retrieval results, the expected ID is visible in the prompt for 62 of 69 cases, up from 36. That is a count of visibility, not a measured accuracy gain. This changes every affected prompt, so the cassettes need one re-record (about $0.60) before the new numbers exist; until then the tables above describe the recorded run.
+
 ### Stage 5 changes after the recorded run
 
 Both are safety-contract changes (stage 5) and were made on 2026-10-09 in response to the findings above. The prompt is unchanged, so the recorded cassettes still replay.

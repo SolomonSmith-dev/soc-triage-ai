@@ -1,0 +1,18 @@
+{
+  "cases_expecting_techniques": 69,
+  "visible_before": 36,
+  "visible_after": 62,
+  "not_visible_before_but_in_top10": 14,
+  "not_in_top10_before": 19,
+  "technique_match_when_visible_before": [
+    35,
+    36
+  ],
+  "technique_match_when_not_visible_before": [
+    21,
+    33
+  ],
+  "chunks_with_ids_before": 22,
+  "chunks_with_ids_after": 72,
+  "chunks_total": 109
+}
