@@ -25,7 +25,7 @@ def test_no_stale_seven_of_seven_badge():
 
 
 def test_placeholders_are_only_the_demo_link():
-    assert re.findall(r"[A-Z_]+_PLACEHOLDER", README) == ["DEMO_URL_PLACEHOLDER"]
+    assert re.findall(r"[A-Z_]+_PLACEHOLDER", README) == []
 
 
 def test_no_em_dashes_in_prose():
