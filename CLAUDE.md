@@ -82,3 +82,7 @@ No claim about reliability without numbers.
 2. Inspect `packages/contracts/` for the schema
 3. `AskUserQuestion` with concrete options
 4. If the change weakens a guardrail, stop and ask
+
+## ICM / Graphify
+
+When `graphify-out/graph.json` exists, answer codebase questions with `graphify query "<q>"` (also `path` / `explain`) before grep or explore agents. Rebuild with `graphify update` after large structural changes. Dual Develop: Hermes-first product build; Cursor for git/PR/evals/parallel. No secrets in commits or docs. Ops spine: `~/Projects/personal-tech-ops`.
