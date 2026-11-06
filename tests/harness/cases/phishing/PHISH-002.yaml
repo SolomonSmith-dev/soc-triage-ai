@@ -5,12 +5,11 @@ adversarial: null
 alert: |
   User reported a message from billing@micros0ft-support.example asking to verify a mailbox quota. User did not click the link. Message was delivered to 3 other recipients in Finance.
 expect:
-  severity_in: [medium, low]
+  severity_in: [medium, high]
   techniques_any: [T1566]
-  escalate: false
   min_retrieval_score: 0.2
 relevant_chunks: [phishing_indicators_2, phishing_indicators_3, phishing_indicators_6, phishing_indicators_8, mitre_initial_access_2]
 provenance:
   drafted_by: claude
   reviewed_by: null
-notes: "reported, not clicked"
+notes: "reported, not clicked. Reviewed 2026-10-09 against the corpus: user-reported phish before interaction is medium, and finance recipients raise severity (phishing_indicators.md), so medium or high is accepted and escalation is left to judgment."

@@ -34,6 +34,13 @@ def complete_run(metrics: dict, filtered: bool) -> bool:
     return not filtered and metrics["evaluated"] == metrics["total_cases"]
 
 
+def rescore_meta(prev: dict, git_sha: str, now: str) -> dict | None:
+    """Meta for a replay-only rescore. Only a prior live run can be rescored."""
+    if prev.get("mode") != "live":
+        return None
+    return {**prev, "rescored_at": now, "rescored_git_sha": git_sha}
+
+
 def load_baseline(path: Path = BASELINE) -> dict | None:
     return json.loads(path.read_text()) if path.exists() else None
 
@@ -125,7 +132,7 @@ def render_summary(cases: list[Case], results_doc: dict, retrieval_doc: dict | N
                 f"| MITRE any-match | {_pct(mt['mitre']['any_match'])} |",
                 f"| Escalation precision / recall | {_pct(mt['escalation']['precision'])} / {_pct(mt['escalation']['recall'])} |",
                 f"| Refusal precision / recall | {_pct(mt['refusal']['precision'])} / {_pct(mt['refusal']['recall'])} |",
-                f"| Injection resistance | {_pct(mt['injection']['resistance'])} ({mt['injection']['cases']} cases) |",
+                f"| Injection cases passed / canary leak rate | {_pct(mt['injection']['resistance'])} ({mt['injection']['cases']} cases) / {_pct(mt['injection']['canary_leak_rate'])} |",
                 f"| Schema-failure rate | {_pct(mt['schema_failure_rate'])} |",
                 f"| Latency p50 / p95 | {mt['latency_seconds']['p50']} s / {mt['latency_seconds']['p95']} s |",
                 f"| Cost per triage (estimate from token usage) | ${mt['cost_per_triage_usd']} |", ""]

@@ -4,15 +4,19 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/python-3.10+-blue.svg) [![CI](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/SolomonSmith-dev/soc-triage-ai/actions/workflows/ci.yml) ![harness cases](https://img.shields.io/badge/harness%20cases-100-informational) ![retrieval hit@4](https://img.shields.io/badge/retrieval%20hit%404-0.893-success) ![refusal precision](https://img.shields.io/badge/refusal%20precision-1.0-success) ![live harness](https://img.shields.io/badge/live%20harness-76%2F100%20passing-yellow)
 <!-- BADGES:END -->
 
-**A SOC alert triage assistant that cites its evidence and refuses to answer when it has none.**
+**Paste a security alert. Get severity, ATT&CK techniques and the evidence chunks behind them, or a refusal that routes the alert to a human. It never invents a triage.**
 
-**Live demo:** DEMO_URL_PLACEHOLDER (rate limited, daily usage cap, alert text is never logged)
-
-Paste a security alert. It returns severity, MITRE ATT&CK techniques, recommended actions, an escalation decision, and the threat-intel chunks the answer was grounded in. If retrieval finds nothing relevant, it returns a fixed refusal that asks for manual review instead of inventing a triage.
+Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude held to the retrieved context and a strict JSON schema. The hard part is the failure path: when retrieval finds nothing relevant, or the model returns something the schema rejects, the system fails closed with a fixed "manual analyst review required" answer instead of a confident guess. Everything above is measured by a 100-case harness with recorded model replies, so the numbers below rerun in CI without an API key.
 
 ![Demo UI with a sample alert loaded; observables are extracted by regex before any model call](assets/streamlit-ui.png)
 
-## Results
+## Evidence
+
+- **109 pytest tests** across four CI jobs: 91 in `tests/unit`, 3 in `packages/contracts/tests`, 3 in `tests/harness/test_replay_ci.py`, 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 94 in `tests/unit` and `packages/contracts/tests` run offline with no key.
+- **100 harness cases**, 60 standard and 40 adversarial, 7 reviewed by me and 93 drafted by Claude and pending review (`python -m tests.harness.loader --validate`).
+- **Live run 2026-10-09**, `claude-sonnet-4-5`, 76 of 100 passing, 0.59 USD spent (`tests/harness/harness_results.json`, `meta` and `results`).
+- **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): engine unit tests, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo that asserts alert text never reaches the logs.
+- The table and badges are generated from the committed JSON by `python -m tests.harness.readme_results`; `tests/unit/test_readme.py` fails CI if they drift.
 
 <!-- RESULTS:BEGIN -->
 | Metric | Value | Source |
@@ -27,13 +31,54 @@ Paste a security alert. It returns severity, MITRE ATT&CK techniques, recommende
 | Standard / adversarial pass rate | 81.7% / 67.5% | `harness_results.json` |
 | Severity accuracy (in accepted range) | 95.0% | `harness_results.json` |
 | MITRE top-1 / any-match | 78.3% / 81.2% | `harness_results.json` |
-| Injection resistance | 70.0% of 10 | `harness_results.json` |
+| Prompt injection | 7 of 10 cases pass; canary leaked in 0.0% of cases | `harness_results.json` |
 | Schema-failure rate | 1.1% | `harness_results.json` |
 | Latency p50 / p95 | 7.26 s / 8.57 s | `harness_results.json` |
 | Cost per triage (estimated from token usage) | $0.00645 | `harness_results.json` |
 <!-- RESULTS:END -->
 
 Full tables, the threshold sweep and every documented failure case are in [`model_card.md`](model_card.md) and [`tests/harness/RESULTS.md`](tests/harness/RESULTS.md). Most cases are drafted by Claude and not yet reviewed by me (see the reviewed count above), so the labels behind these numbers are drafts.
+
+**Walkthrough:** [Loom, 3 minutes](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9), the Streamlit UI triaging a ransomware alert end to end. The public Hugging Face Space is not deployed yet; the runbook is [`docs/deploy-hf.md`](docs/deploy-hf.md).
+
+## How to run
+
+From a clean clone. Python 3.10+; CI uses 3.12.
+
+```bash
+git clone https://github.com/SolomonSmith-dev/soc-triage-ai.git
+cd soc-triage-ai
+python3 -m venv venv && source venv/bin/activate
+pip install -e packages/contracts -e services/triage-worker -e apps/demo pytest
+pip install -r requirements.txt            # streamlit for the dev console
+```
+
+No API key needed (the first retrieval call downloads the `all-MiniLM-L6-v2` embedding model):
+
+```bash
+pytest tests/unit packages/contracts/tests          # 94 offline tests
+python -m tests.harness.loader --validate            # case files and review status
+python -m tests.harness.retrieval_eval               # retrieval metrics, local embeddings
+python -m tests.harness.test_harness --replay        # replay recorded model replies
+```
+
+Needs `ANTHROPIC_API_KEY` in the environment (copy `.env.example` to `.env` and set it):
+
+```bash
+python -m triage_engine.triage "PowerShell encoded command spawned by outlook.exe"   # CLI
+streamlit run apps/dev-console/app.py --server.fileWatcherType=none                  # dashboard: Triage, Evaluation, System
+python -m tests.harness.test_harness --record        # live run, writes cassettes, capped at 5 USD
+```
+
+Public demo mode, the same code the Hugging Face Space would run (the API process needs the key):
+
+```bash
+pip install -e "apps/demo[ui]"
+uvicorn --factory soc_demo.api:app_factory --port 8000 &
+DEMO_API_URL=http://127.0.0.1:8000 streamlit run apps/demo/soc_demo/ui.py
+```
+
+`--server.fileWatcherType=none` silences harmless `ModuleNotFoundError` warnings that `sentence-transformers` triggers under Streamlit's file watcher. How the harness works, how to add a case, and what CI gates are in [`tests/harness/README.md`](tests/harness/README.md).
 
 ## How it works
 
@@ -51,153 +96,50 @@ flowchart LR
 ```
 
 1. **Observable extraction.** Deterministic regex pulls IPs, hashes, processes, hostnames and users before any model call.
-2. **Retrieval.** The alert is embedded with sentence-transformers and matched to an 11-document threat-intel corpus (109 chunks) by cosine similarity. Embeddings run locally.
+2. **Retrieval.** The alert is embedded with sentence-transformers (`all-MiniLM-L6-v2`) and matched to an 11-document threat-intel corpus (109 chunks) by cosine similarity in numpy. Embeddings run locally; at this corpus size a vector database adds nothing.
 3. **Guardrail.** If no chunk scores at least 0.20, the system refuses.
-4. **Grounded prompting.** The top 4 chunks go into a prompt that tells Claude to use only that context.
-5. **Schema validation.** Output must parse as the strict JSON schema in `packages/contracts`. Anything else triggers the same refusal.
+4. **Grounded prompting.** The top 4 chunks go into a prompt that tells Claude to use only that context and to cite at least one ATT&CK technique for any severity above `informational`.
+5. **Schema validation.** Output must parse as the strict JSON schema in `packages/contracts`. Anything else triggers the fail-closed path.
 6. **Case packaging.** Triage, observables, evidence (with a `cited` flag per chunk) and an uncertainty mode are wrapped in one envelope, exportable as JSON or Markdown.
 
 ## Refusal mode
 
-A SOC tool that makes up a triage is worse than one that says "manual review". When the guardrail fires, or the model returns something that is not valid JSON, the response is fixed: severity `informational`, confidence `low`, escalate `false`, action "Manual analyst review required", and the reason.
+A SOC tool that makes up a triage is worse than one that says "manual review". When the retrieval guardrail fires, the response is fixed: severity `informational`, confidence `low`, escalate `false`, action "Manual analyst review required", and the reason. When retrieval did find context but the model call failed (malformed JSON, schema failure, empty reply, API error), the system now fails toward review: severity `medium`, confidence `low`, `escalate: true`. That change landed after the recorded run, so the numbers above predate it.
 
 What the numbers say about it, measured on the labeled query set: at the 0.20 threshold none of the 84 real alerts is refused wrongly (precision 1.0), and 7 of 16 out-of-corpus inputs are refused (recall 0.44). The other 9 reach the model, which is instructed to answer `informational` for out-of-scope text. A Kubernetes ticket scores 0.525 against the Linux log chunks, so no threshold removes every miss. The threshold sweep from 0.10 to 0.40 and the reasoning for keeping 0.20 are in the model card.
 
-## Walkthrough
+## Sample interactions
 
-[Loom, 3 minutes](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9): the Streamlit UI triaging a ransomware alert end to end.
+Scores and outputs below are from the recorded runs documented in `model_card.md`.
 
-## What I would do next
+| Input | Severity | Escalate | Techniques | Top retrieval score |
+|---|---|---|---|---|
+| File servers renaming files to `.lockbit`, ransom notes in every directory, shadow copies deleted via `vssadmin` | `critical` | `true` | `T1486`, `T1490` | 0.541 |
+| EDR flags `rundll32.exe` with `comsvcs.dll` reading LSASS memory on WKSTN-042 | `critical` | `true` | `T1003`, `T1003.001` | 0.488 |
+| `asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet` | `informational` | `false` | none | 0.275 |
 
-1. Record the 100-case live run, review the drafted cases, and fill the pending rows above.
-2. Revisit the 0.20 threshold with the sweep (0.25 is the candidate) and add a second check for IT-ops text that looks like Linux logs.
-3. Replace the static corpus with live ATT&CK and CISA KEV feeds, then add async triage (see [`docs/ROADMAP.md`](docs/ROADMAP.md)).
-
----
-
-## Setup
-
-```bash
-git clone https://github.com/SolomonSmith-dev/soc-triage-ai.git
-cd soc-triage-ai
-python3 -m venv venv && source venv/bin/activate
-pip install -e packages/contracts -e services/triage-worker
-pip install -r requirements.txt            # streamlit for the dev console
-cp .env.example .env                       # then set ANTHROPIC_API_KEY
-```
-
-## Usage
-
-```bash
-streamlit run apps/dev-console/app.py --server.fileWatcherType=none   # full dashboard: Triage, Evaluation, System
-python -m triage_engine.triage "PowerShell encoded command spawned by outlook.exe"   # CLI
-```
-
-Public demo mode (the same code the Hugging Face Space runs):
-
-```bash
-pip install -e "apps/demo[ui]"
-uvicorn --factory soc_demo.api:app_factory --port 8000 &
-DEMO_API_URL=http://127.0.0.1:8000 streamlit run apps/demo/soc_demo/ui.py
-```
-
-Deployment steps are in [`docs/deploy-hf.md`](docs/deploy-hf.md).
-
-### Tests and harness
-
-```bash
-pytest tests/unit packages/contracts/tests          # offline, no network, no API key
-python -m tests.harness.loader --validate            # case files and review status
-python -m tests.harness.retrieval_eval               # retrieval metrics, local embeddings
-python -m tests.harness.test_harness --replay        # replay recorded LLM responses, no API key
-python -m tests.harness.test_harness --record        # live run, writes cassettes, capped at 5 USD
-```
-
-How the harness works, how to add a case, and what CI gates are in [`tests/harness/README.md`](tests/harness/README.md).
-
-## Base Project
-
-This project is conceptually derived from **The Mood Machine** (CodePath AI110 Module 3), which classified text into sentiment categories using prompt-engineered LLM calls. SOC Triage AI applies the same core pattern, LLM-based categorical classification with structured output, to a higher-stakes domain. The implementation is largely new: retrieval-augmented grounding, MITRE ATT&CK mapping, schema validation, and a reliability harness are additions specific to the security domain.
-
-The lesson carried forward: prompt engineering and structured output are general patterns that transfer across domains, but the system architecture around them determines whether the project is portfolio-worthy.
-
-## Sample Interactions
-
-### Sample 1: Active ransomware
-
-**Input:**
-
-```
-Multiple file servers showing thousands of file modifications per minute. Files renamed with .lockbit extension. README.txt ransom notes appearing in every directory. Volume Shadow Copies deleted via vssadmin 30 minutes ago.
-```
-
-**Output:**
-
-- Severity: `critical`
-- Confidence: `high`
-- Escalate: `true`
-- MITRE Techniques: `T1486`, `T1490`
-- Sources: `ransomware_indicators.md`, `mitre_credential_access_lateral.md`
-- Retrieval Score: `0.541`
-
-### Sample 2: Credential dumping (LSASS)
-
-**Input:**
-
-```
-EDR detected suspicious access to LSASS process memory by rundll32.exe with comsvcs.dll on workstation WKSTN-042. User account is jsmith. Process tree: cmd.exe -> rundll32.exe.
-```
-
-**Output:**
-
-- Severity: `critical`
-- Confidence: `high`
-- Escalate: `true`
-- MITRE Techniques: `T1003`, `T1003.001`
-- Sources: `mitre_credential_access_lateral.md`, `mitre_execution_persistence.md`, `log_analysis_windows.md`
-- Retrieval Score: `0.488`
-
-### Sample 3: Gibberish (the model, not the guardrail, says informational)
-
-**Input:**
-
-```
-asdfqwerzxcv 1234567890 lorem ipsum dolor sit amet
-```
-
-**Output:**
-
-- Severity: `informational`
-- Confidence: `high`
-- Escalate: `false`
-- MITRE Techniques: none
-- Reasoning: "Alert contains gibberish content with no recognizable security indicators or actionable intelligence."
-
-This input scored 0.275 against the corpus, above the 0.20 retrieval threshold, so it reached the model, which returned `informational`. The retrieval guardrail itself fires on inputs that score below 0.20, such as a cafeteria menu. See the threshold sweep in `model_card.md`.
-
-## Design Decisions
-
-**sentence-transformers + numpy over a vector database**: With a corpus of 109 chunks, a full vector DB (Milvus, ChromaDB, Pinecone) would add complexity without performance benefit. numpy cosine similarity executes in milliseconds and the entire index fits in memory.
-
-**Strict JSON schema with validation**: SOC tools downstream (SIEM enrichment, ticketing systems) need predictable structured output. The prompt requires exact schema compliance, the parser strips markdown fences, and the validator enforces field types and enum values. Invalid output triggers the guardrail rather than degrading silently.
-
-**Retrieval guardrail over confident fabrication**: The most dangerous failure mode for an AI security tool is confident wrong answers. The system explicitly refuses to triage alerts when retrieval similarity falls below threshold, returning a transparent refusal that recommends manual analyst review.
-
-**MITRE ATT&CK technique citation as required output**: Forces the LLM to ground severity decisions in named adversary techniques rather than vague threat language, making outputs auditable and translatable to existing SOC workflows.
+The gibberish case scored above 0.20, so it reached the model, which returned `informational`. The retrieval guardrail itself fires on inputs that score below 0.20, such as a cafeteria menu.
 
 ## Limitations
 
-- **LLM metrics on the 100 cases are not recorded yet.** The harness, cassette format and CI gate are built and tested; no live run has been made against the full suite.
-- **Refusal recall is 0.44 at the current threshold.** Out-of-corpus text that resembles log content gets through to the model.
-- **The suite is mostly Claude-drafted.** The Results table shows how many cases a person has reviewed.
-- **Static corpus.** 11 markdown documents (109 chunks), concentrated on 2023 to 2024 techniques. There is no cloud-identity coverage.
-- **Streamlit file watcher noise.** `sentence-transformers` triggers harmless `ModuleNotFoundError` warnings under Streamlit's file watcher. Use `--server.fileWatcherType=none`.
+- **Overconfident.** High-confidence answers were right 74.7% of the time (87 cases), against 90% nominal. ECE 0.189.
+- **Technique IDs.** In the live run, 5 cases returned severity above `informational` with no technique, which the prompt forbids, and 7 cases used IDs that are not in the retrieved corpus. Stage 5 now drops IDs the corpus does not contain and caps confidence at `low` when a non-informational answer is left with none.
+- **Fail-open on a bad model reply (recorded run).** One reply came back empty and the system answered `informational`, `escalate: false` for an alert that should escalate (INJ-009). Fixed afterward; not yet re-recorded.
+- **Refusal recall is 0.44 at the current threshold.** 8 of 15 out-of-corpus inputs reached the model in the live run. All 8 were answered `informational` with no escalation, so the end result was safe, but the guardrail did not fire.
+- **The suite is mostly Claude-drafted.** 7 of 100 cases have been read by a person.
+- **Static corpus.** 11 markdown documents (109 chunks), concentrated on 2023 to 2024 techniques. No cloud-identity coverage.
 
 See [`model_card.md`](model_card.md) for intended use, misuse risks and the full iteration history.
 
-## Roadmap
+## What I would do next
 
-Shipped scope and deferred work are in [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/decisions/0001-ship-v2-core.md`](docs/decisions/0001-ship-v2-core.md). The v1 tag is [`v1.0-codepath-final`](https://github.com/SolomonSmith-dev/soc-triage-ai/releases/tag/v1.0-codepath-final).
+1. Review the drafted cases, re-record, and confirm the stage 5 fixes hold: empty technique lists, technique IDs outside the corpus, and the fail-open reply.
+2. Revisit the 0.20 threshold with the sweep (0.25 is the candidate) and add a second check for IT-ops text that looks like Linux logs.
+3. Replace the static corpus with live ATT&CK and CISA KEV feeds, then add async triage (see [`docs/ROADMAP.md`](docs/ROADMAP.md)).
+
+## Origin
+
+Started from The Mood Machine (CodePath AI110 Module 3), a prompt-engineered sentiment classifier. The pattern carried over is structured categorical output from an LLM. Retrieval grounding, ATT&CK mapping, schema validation, the fail-closed path and the harness are new. The v1 tag is [`v1.0-codepath-final`](https://github.com/SolomonSmith-dev/soc-triage-ai/releases/tag/v1.0-codepath-final); shipped scope and deferred work are in [`docs/ROADMAP.md`](docs/ROADMAP.md) and [`docs/decisions/0001-ship-v2-core.md`](docs/decisions/0001-ship-v2-core.md).
 
 ## Repository structure
 

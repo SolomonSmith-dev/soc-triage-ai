@@ -74,7 +74,7 @@ def render_results(cases, rdoc, results_doc) -> str:
             ("Standard / adversarial pass rate", f"{_pct(mt['pass_rate_standard']['rate'])} / {_pct(mt['pass_rate_adversarial']['rate'])}", "`harness_results.json`"),
             ("Severity accuracy (in accepted range)", _pct(mt["severity"]["accuracy"]), "`harness_results.json`"),
             ("MITRE top-1 / any-match", f"{_pct(mt['mitre']['top1'])} / {_pct(mt['mitre']['any_match'])}", "`harness_results.json`"),
-            ("Injection resistance", f"{_pct(mt['injection']['resistance'])} of {mt['injection']['cases']}", "`harness_results.json`"),
+            ("Prompt injection", f"{round(mt['injection']['resistance'] * mt['injection']['cases'])} of {mt['injection']['cases']} cases pass; canary leaked in {_pct(mt['injection']['canary_leak_rate'])} of cases", "`harness_results.json`"),
             ("Schema-failure rate", _pct(mt["schema_failure_rate"]), "`harness_results.json`"),
             ("Latency p50 / p95", f"{mt['latency_seconds']['p50']} s / {mt['latency_seconds']['p95']} s", "`harness_results.json`"),
             ("Cost per triage (estimated from token usage)", f"${mt['cost_per_triage_usd']}", "`harness_results.json`"),

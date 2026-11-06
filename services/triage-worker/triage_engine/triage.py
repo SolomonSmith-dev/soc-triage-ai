@@ -31,6 +31,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+TECH_ID = re.compile(r"T\d{4}(?:\.\d{3})?")
+
 MODEL = "claude-sonnet-4-5"
 MAX_TOKENS = 1024
 
@@ -85,6 +87,9 @@ class SOCTriage:
             retriever = ThreatIntelRetriever()
             retriever.index(load_corpus(CORPUS_DIR))
         self.retriever = retriever
+        # every technique ID the knowledge base contains; None when the retriever exposes no chunks
+        chunks = getattr(retriever, "chunks", None)
+        self._corpus_ids = set(TECH_ID.findall(" ".join(c["text"] for c in chunks))) if chunks else None
 
     def triage(self, alert: str) -> Dict[str, Any]:
         """Triage a security alert. Returns structured JSON dict."""
@@ -147,6 +152,7 @@ class SOCTriage:
             raw = response.content[0].text
             parsed = self._parse_json(raw)
             self._validate_schema(parsed)
+            parsed = self._ground_techniques(parsed, context)
             parsed["sources"] = sources
             parsed["retrieval_score"] = round(avg_score, 3)
             return parsed, hits, False
@@ -154,7 +160,7 @@ class SOCTriage:
         except json.JSONDecodeError as e:
             logger.error(f"JSON parse failed: {e}. Raw: {raw[:300]}")
             return (
-                self._guardrail_response(
+                self._failure_response(
                     "LLM produced malformed JSON",
                     retrieval_score=avg_score,
                     sources=sources,
@@ -165,7 +171,7 @@ class SOCTriage:
         except Exception as e:
             logger.error(f"Triage failed: {type(e).__name__}: {e}")
             return (
-                self._guardrail_response(
+                self._failure_response(
                     f"System error: {type(e).__name__}",
                     retrieval_score=avg_score,
                     sources=sources,
@@ -209,6 +215,55 @@ class SOCTriage:
         valid_confidence = {"high", "medium", "low"}
         if parsed["confidence"] not in valid_confidence:
             raise ValueError(f"Invalid confidence: {parsed['confidence']}")
+
+    def _ground_techniques(self, parsed: Dict, context: str) -> Dict:
+        """Stage 5 grounding. Keep only technique IDs that exist in the knowledge base.
+
+        The prompt says not to invent IDs; this makes it a guarantee. An ID is kept if the corpus
+        contains it (or its parent technique). The check is corpus-wide, not limited to the four
+        retrieved chunks: the chunk that carries an ID is often not retrieved, and requiring it
+        dropped 19 correct answers in the recorded run. If the retriever exposes no chunks, the
+        retrieved context is used instead. If a non-informational answer ends up with no grounded
+        technique, confidence is capped at "low" so the case surfaces as needing context.
+        Severity and escalation are never changed here.
+        """
+        known = self._corpus_ids if self._corpus_ids is not None else set(TECH_ID.findall(context))
+        parents = {t.split(".")[0] for t in known}
+        raw = parsed["mitre_techniques"]
+        kept = [t for t in raw if isinstance(t, str) and (t in known or t.split(".")[0] in parents)]
+        if len(kept) != len(raw):
+            logger.info("dropped %d ungrounded technique ids", len(raw) - len(kept))
+        parsed["mitre_techniques"] = kept
+        if parsed["severity"] != "informational" and not kept:
+            parsed["confidence"] = "low"
+        return parsed
+
+    def _failure_response(
+        self, reason: str, retrieval_score: float, sources: list
+    ) -> Dict:
+        """Retrieval found relevant context but the model call or its output failed.
+
+        This must not look like a benign verdict. The alert resembled the corpus, so the safe
+        default is to send it to a person: escalate, low confidence, medium severity as a floor.
+        (The retrieval guardrail, where nothing relevant was found, still answers informational.)
+        """
+        return {
+            "severity": "medium",
+            "confidence": "low",
+            "mitre_techniques": [],
+            "summary": f"Automated triage failed: {reason}",
+            "recommended_actions": [
+                "Manual analyst review required",
+                "Treat as untriaged: the model produced no usable result",
+            ],
+            "escalate": True,
+            "reasoning": (
+                f"Triage failed: {reason}. Retrieval found relevant context, so the alert is not "
+                f"ruled out. Escalated for manual review instead of defaulting to informational."
+            ),
+            "sources": sources,
+            "retrieval_score": round(retrieval_score, 3),
+        }
 
     def _guardrail_response(
         self, reason: str, retrieval_score: float, sources: list

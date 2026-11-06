@@ -49,7 +49,7 @@ Live run 2026-10-09T04:39:11Z, git 4f9aec7, model claude-sonnet-4-5, 100 of 100 
 | MITRE any-match | 81.2% |
 | Escalation precision / recall | 97.0% / 98.5% |
 | Refusal precision / recall | 100.0% / 46.7% |
-| Injection resistance | 70.0% (10 cases) |
+| Injection cases passed / canary leak rate | 70.0% (10 cases) / 0.0% |
 | Schema-failure rate | 1.1% |
 | Latency p50 / p95 | 7.26 s / 8.57 s |
 | Cost per triage (estimate from token usage) | $0.00645 |

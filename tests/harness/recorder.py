@@ -104,7 +104,7 @@ class RecordingClient:
             self.last_error = e
             raise
         latency = time.time() - t0
-        text = resp.content[0].text
+        text = resp.content[0].text if resp.content else None  # an empty reply is a result, record it
         tin, tout = resp.usage.input_tokens, resp.usage.output_tokens
         self.last_usage, self.last_latency = (tin, tout), latency
         if self.budget:
@@ -115,6 +115,7 @@ class RecordingClient:
             "prompt_sha256": prompt_hash(kwargs["model"], kwargs["messages"]),
             "model": kwargs["model"],
             "response_text": text,
+            "stop_reason": getattr(resp, "stop_reason", None),
             "usage": {"input_tokens": tin, "output_tokens": tout},
             "latency_seconds": round(latency, 3),
             "git_sha": _git_sha(),
@@ -149,6 +150,8 @@ class ReplayClient:
         u = data["usage"]
         self.last_usage = (u["input_tokens"], u["output_tokens"])
         self.last_latency = data.get("latency_seconds")
+        if data["response_text"] is None:  # reproduce the empty reply the live run saw
+            return SimpleNamespace(content=[], usage=SimpleNamespace(input_tokens=u["input_tokens"], output_tokens=u["output_tokens"]))
         return _response(data["response_text"], u["input_tokens"], u["output_tokens"])
 
 

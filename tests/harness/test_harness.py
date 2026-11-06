@@ -16,7 +16,7 @@ from tests.harness.loader import CaseLoadError, load_cases
 from tests.harness.metrics import compute_metrics
 from tests.harness.recorder import Budget, _git_sha, preflight
 from tests.harness.report import (
-    BASELINE, RESULTS, baseline_snapshot, complete_run, diff_text, load_baseline, write_results,
+    BASELINE, RESULTS, baseline_snapshot, complete_run, diff_text, load_baseline, load_results_doc, rescore_meta, write_results,
 )
 from tests.harness.runner import build_retriever, evaluate_case, run_all  # noqa: F401  (evaluate_case re-exported)
 
@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--replay", action="store_true", help="replay cassettes, no API calls")
     mode.add_argument("--record", action="store_true", help="live calls, write cassettes (default)")
+    mode.add_argument("--rescore", action="store_true",
+                      help="replay cassettes with the current code and rewrite results (no API calls); for stage 5 changes")
     ap.add_argument("--only", nargs="*", help="case ids")
     ap.add_argument("--category", help="category or group prefix, e.g. phishing or adversarial")
     ap.add_argument("--workers", type=int, default=4)
@@ -49,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--update-baseline", action="store_true")
     ap.add_argument("--yes", action="store_true", help="skip the baseline confirmation prompt")
     args = ap.parse_args(argv)
-    replay = args.replay
+    replay = args.replay or args.rescore
 
     try:
         all_cases = load_cases()
@@ -91,14 +93,20 @@ def main(argv: list[str] | None = None) -> int:
     if budget:
         print(f"live spend estimate: ${budget.spent_usd:.4f} ({budget.tokens_in} in, {budget.tokens_out} out tokens)")
 
-    if not replay and not complete_run(metrics, filtered):
+    write = not replay or args.rescore
+    if write and not complete_run(metrics, filtered):
         print("not writing harness_results.json or baseline.json: the run was filtered or not every case was evaluated")
         return 1
-    if not replay:
+    if write:
         meta = {"mode": "live", "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "git_sha": _git_sha(), "model": "claude-sonnet-4-5",
                 "spend_usd_estimate": round(budget.spent_usd, 4) if budget else None,
                 "tokens_in": budget.tokens_in if budget else 0, "tokens_out": budget.tokens_out if budget else 0}
+        if args.rescore:
+            meta = rescore_meta(load_results_doc()["meta"], _git_sha(), time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+            if meta is None:
+                print("nothing to rescore: harness_results.json is not from a live run")
+                return 1
         write_results(RESULTS, meta, results, metrics)
         print(f"wrote {RESULTS}")
         if args.update_baseline:
