@@ -8,6 +8,8 @@
 
 Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude held to the retrieved context and a strict JSON schema. The hard part is the failure path: when retrieval finds nothing relevant, or the model returns something the schema rejects, the system fails closed with a fixed "manual analyst review required" answer instead of a confident guess. Everything above is measured by a 100-case harness with recorded model replies, so the numbers below rerun in CI without an API key.
 
+**Live demo:** the hosted Streamlit UI link fills in here when the deploy goes public (the last, gated step).
+
 ![Demo UI with a sample alert loaded; observables are extracted by regex before any model call](assets/streamlit-ui.png)
 
 ## Evidence
@@ -15,6 +17,7 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 - **109 pytest tests** across four CI jobs: 91 in `tests/unit`, 3 in `packages/contracts/tests`, 3 in `tests/harness/test_replay_ci.py`, 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 94 in `tests/unit` and `packages/contracts/tests` run offline with no key.
 - **100 harness cases**, 60 standard and 40 adversarial, 7 reviewed by me and 93 drafted by Claude and pending review (`python -m tests.harness.loader --validate`).
 - **Live run 2026-10-09**, `claude-sonnet-4-5`, 76 of 100 passing, 0.59 USD spent (`tests/harness/harness_results.json`, `meta` and `results`).
+- **24 of 100 fail** in that live run — 11 standard and 13 adversarial. The misses break down as 13 wrong technique matches, 8 refusal-guardrail misses (the threshold passed on out-of-corpus text), and 5 severity / 3 escalation misses, with some cases failing more than one check. The failure-by-case detail is in `harness_results.json` and `tests/harness/RESULTS.md`; the fixes for the technique-guard gaps are staged in the model card.
 - **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): engine unit tests, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo that asserts alert text never reaches the logs.
 - The table and badges are generated from the committed JSON by `python -m tests.harness.readme_results`; `tests/unit/test_readme.py` fails CI if they drift.
 

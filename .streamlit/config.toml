@@ -1,0 +1,26 @@
+# Streamlit configuration for the SOC Triage AI demo UI.
+#
+# Resolved by `streamlit run apps/demo/soc_demo/ui.py` when launched from the
+# repo root, so the same settings apply in local dev and on the hosted deploy
+# (Streamlit Community Cloud reads this repo-root .streamlit/config.toml; the
+# Hugging Face Space image also copies it in - see deploy/hf-space/Dockerfile).
+#
+# Spend cap: the demo's *cost* cap is enforced app-side, not by Streamlit. The
+# demo API's DailyBudget (apps/demo/soc_demo/guard.py) refuses requests once the
+# daily token cap is spent; the default is 200,000 tokens (~$0.6/day at current
+# pricing), overridable with DEMO_DAILY_TOKEN_CAP. Deploy docs recommend a
+# hard monthly Anthropic limit on the key as the backstop (docs/deploy-hf.md).
+
+[theme]
+base = "dark"
+primaryColor = "#4B8BBE"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+# sentence-transformers's import scan trips Streamlit's file watcher; the
+# README documents the CLI flag, this bakes the same workaround in for hosted
+# runs so no flag is needed.
+fileWatcherType = "none"
