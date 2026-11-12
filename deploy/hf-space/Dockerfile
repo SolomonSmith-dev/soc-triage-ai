@@ -27,6 +27,7 @@ WORKDIR /home/user/app
 COPY --from=source /src/packages/contracts packages/contracts
 COPY --from=source /src/services/triage-worker services/triage-worker
 COPY --from=source /src/apps/demo apps/demo
+COPY --from=source /src/.streamlit .streamlit
 COPY --from=source /src/deploy/hf-space deploy/hf-space
 
 # CPU-only torch keeps the image to roughly 2 GB instead of 5 GB.
