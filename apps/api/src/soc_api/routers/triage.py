@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soc_api.db import get_session
+from soc_api.deps import current_api_key
 from soc_api.services import triage_service
 from soc_contracts import TriageJobRequest, TriageJobResponse, TriageJobStatus
 
-router = APIRouter(prefix="/triage", tags=["triage"])
+router = APIRouter(prefix="/triage", tags=["triage"], dependencies=[Depends(current_api_key)])
 
 
-# TODO(P2): add API key auth dep
 # TODO(P3): swap synchronous run for Celery dispatch; this endpoint becomes a
 # real job-queue + GET /triage/jobs/{job_id} for polling.
 @router.post("/jobs", response_model=TriageJobResponse, status_code=status.HTTP_200_OK)

@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soc_api.db import get_session
+from soc_api.deps import current_api_key
 from soc_api.services import case_service
 from soc_contracts import CaseEnvelope, CaseSummary
 
-router = APIRouter(prefix="/cases", tags=["cases"])
+router = APIRouter(prefix="/cases", tags=["cases"], dependencies=[Depends(current_api_key)])
 
 
 @router.get("", response_model=list[CaseSummary])
