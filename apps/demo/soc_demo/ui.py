@@ -4,21 +4,13 @@ import os
 import httpx
 import streamlit as st
 
+from soc_demo.present import (
+    CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, download_name,
+    is_known_miss, option_label,
+)
 from triage_engine.extractors import extract_observables
 
 API_URL = os.environ.get("DEMO_API_URL", "http://127.0.0.1:8000")
-
-# Quick picks by harness case id. Each shows only if GET /samples lists it, which in cached mode
-# means this machine verified that it replays or refuses.
-FEATURED = {
-    "T2_ransomware_active": "Active ransomware",
-    "T3_credential_dumping_lsass": "LSASS credential dump",
-    "T4_brute_force_ssh": "SSH brute force (Tor exit)",
-    "INJ-001": "Prompt injection inside the alert",
-    "BEN-001": "Benign lookalike (backup job)",
-    "OOC-004": "Out of scope (refusal)",
-}
-OUTCOME = {"replay": "recorded answer", "refusal": "refused at retrieval", "live": "live"}
 
 st.set_page_config(page_title="SOC Triage AI demo", page_icon=":material/shield:", layout="wide")
 
@@ -47,25 +39,12 @@ MODE = _try(api_mode, "unknown")
 CACHED = MODE == "cached"
 SAMPLES = _try(load_samples, []) if MODE != "unknown" else []
 BY_ID = {s["id"]: s for s in SAMPLES}
-# Recordings match on every byte, and each recorded alert ends in a newline. Map an alert that differs from one
-# only in leading or trailing whitespace back to it, so pressing Enter in the box does not lose the recording.
-CANON = {s["alert"].strip(): s["alert"] for s in SAMPLES}
-
-
-def option_label(cid: str) -> str:
-    s = BY_ID[cid]
-    miss = " (known miss: the harness expects a refusal)" if s.get("expects_refusal") and s["kind"] == "replay" else ""
-    return f"{cid}: {s['label']}; {OUTCOME.get(s['kind'], s['kind'])}{miss}"
 
 st.title("SOC Triage AI")
 if CACHED:
-    st.caption("Public demo in recorded mode: the model step replays the responses Claude gave in the project's "
-               "100-case harness run, so this page makes no model calls and costs nothing. Observable extraction, "
-               "retrieval, the refusal guardrail and schema validation run live on every request. Pick a recorded "
-               "alert on the left. Do not paste real alert data.")
+    st.caption(CACHED_INTRO)
 elif MODE == "live":
-    st.caption("RAG-grounded alert triage. Public demo: do not paste real alert data. Requests are rate limited "
-               "and total model usage is capped per day.")
+    st.caption(LIVE_INTRO)
 else:
     st.warning("The demo backend is still starting. Reload the page in a minute.")
 
@@ -96,7 +75,7 @@ with st.sidebar:
             st.session_state["alert"] = BY_ID[cid]["alert"]
     if SAMPLES:
         with st.expander(f"{len(SAMPLES)} recorded harness alerts" if CACHED else f"All {len(SAMPLES)} harness alerts"):
-            pick = st.selectbox("Harness case", list(BY_ID), format_func=option_label)
+            pick = st.selectbox("Harness case", list(BY_ID), format_func=lambda i: option_label(BY_ID[i]))
             if st.button("Load selected", use_container_width=True):
                 st.session_state["alert"] = BY_ID[pick]["alert"]
     else:
@@ -109,8 +88,7 @@ with st.sidebar:
 alert = st.text_area("Alert", key="alert", height=140,
                      placeholder="Pick a recorded alert on the left." if CACHED else "Paste an alert, or pick a sample on the left.")
 if CACHED:
-    st.caption("Recordings match on the exact text. An edited alert still runs retrieval and the guardrail, "
-               "but gets no model response.")
+    st.caption(EXACT_TEXT_NOTE)
 
 if alert.strip():
     obs = {k: v for k, v in extract_observables(alert).items() if v}
@@ -121,7 +99,7 @@ if alert.strip():
 if st.button("Run triage", type="primary", disabled=not alert.strip()):
     with st.spinner("Retrieving context and triaging..."):
         try:
-            sent = CANON.get(alert.strip(), alert) if CACHED else alert
+            sent = canonical_alert(alert, SAMPLES) if CACHED else alert
             r = httpx.post(f"{API_URL}/triage", json={"alert": sent}, timeout=90,
                            headers={"X-Forwarded-For": visitor_ip()} if visitor_ip() else {})
         except httpx.HTTPError:
@@ -141,10 +119,8 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             st.caption(f"Model step replayed from the harness recording of case `{replayed}` "
                        f"({c['version']['model']}{', recorded ' + when if when else ''}). "
                        "Extraction, retrieval and schema validation ran live on this request.")
-            if BY_ID.get(replayed, {}).get("expects_refusal") and not c["guardrail_triggered"]:
-                st.caption("Known guardrail miss, documented in model_card.md: the harness expects a refusal for "
-                           "this out-of-corpus alert, but its retrieval score cleared the threshold, so it reached "
-                           "the model.")
+            if is_known_miss(BY_ID.get(replayed), c):
+                st.caption(KNOWN_MISS)
         if c["guardrail_triggered"]:
             st.warning("Guardrail triggered: the system refused to fabricate a triage. Manual analyst review required.")
             if not c["evidence"]["chunks_retrieved"]:
@@ -157,15 +133,11 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             for ch in c["evidence"]["chunks_retrieved"]:
                 st.markdown(f"`{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}")
                 st.caption(ch["text"][:400])
-        # the body has no replay field (the contract has none yet), so the file name carries the provenance
-        name = f"{c['case_id']}_replay-{replayed}.json" if replayed else f"{c['case_id']}.json"
-        st.download_button("Download case JSON", r.text, file_name=name, mime="application/json")
+        st.download_button("Download case JSON", r.text, file_name=download_name(c, replayed), mime="application/json")
     else:
         body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
         if body.get("status") == "not_recorded":
-            st.info("No recorded model response matches this exact text, so the model step did not run. Retrieval "
-                    "found matching context, so the refusal guardrail did not fire either. Pick a recorded alert on "
-                    "the left for a full triage, or run the project with your own key (see the README).")
+            st.info(NOT_RECORDED)
         else:
             st.info(body.get("message") or f"Request failed with status {r.status_code}.")
         chunks = (body.get("retrieval") or {}).get("chunks") or []

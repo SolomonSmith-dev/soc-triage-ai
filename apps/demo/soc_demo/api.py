@@ -52,6 +52,38 @@ def _where(exc: BaseException) -> str:
     return f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "-"
 
 
+API_PATHS = frozenset({"/triage", "/samples", "/healthz", "/budget"})
+
+
+class ContainErrors:
+    """Last resort for the demo's own routes. A traceback can carry alert or model text, so an unexpected error
+    is logged by type and location only, and the client gets a fixed 500. Plain ASGI and scoped to API_PATHS,
+    so a UI mounted on the same app (the Space's Gradio page) and its streaming responses pass through untouched."""
+
+    def __init__(self, app, mode: str):
+        self.app, self.mode = app, mode
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["path"] not in API_PATHS:
+            await self.app(scope, receive, send)
+            return
+        started = False
+
+        async def tracked(message):
+            nonlocal started
+            started = started or message["type"] == "http.response.start"
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracked)
+        except Exception as exc:
+            logger.error("event=unhandled_error status=500 route=%s error=%s at=%s",
+                         getattr(scope.get("route"), "path", "-"), type(exc).__name__, _where(exc))
+            if not started:  # once the response has started, the connection just closes
+                await JSONResponse({"status": "error", "message": "Internal error. The demo logs only the error type."},
+                                   status_code=500, headers={"X-Demo-Mode": self.mode})(scope, receive, send)
+
+
 def _sample(c: HarnessCase, kind: str) -> dict:
     return {"id": c.case_id, "category": c.category, "group": c.group, "label": c.label,
             "expects_refusal": c.expects_refusal, "kind": kind, "alert": c.alert}
@@ -138,16 +170,7 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
         return JSONResponse({"status": status, "message": message, **extra}, status_code=status_code,
                             headers={"X-Demo-Mode": cfg.mode, **(headers or {})})
 
-    @app.middleware("http")
-    async def contain_errors(request: Request, call_next):
-        """Last resort. A traceback can carry alert or model text, so an unexpected error is logged by type and
-        location only, and the client gets a fixed 500."""
-        try:
-            return await call_next(request)
-        except Exception as exc:
-            logger.error("event=unhandled_error status=500 route=%s error=%s at=%s",
-                         getattr(request.scope.get("route"), "path", "-"), type(exc).__name__, _where(exc))
-            return refuse(500, "error", "Internal error. The demo logs only the error type.")
+    app.add_middleware(ContainErrors, mode=cfg.mode)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request: Request, _exc: RequestValidationError):

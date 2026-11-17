@@ -29,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e packages/contracts
           pip install -e services/triage-worker
-          pip install -e "apps/demo[ui]"   # streamlit, for the AppTest page tests
+          pip install -e "apps/demo[ui,space]"   # streamlit and gradio, for the page tests
           pip install pytest
 
       - name: Run engine unit tests
@@ -234,3 +234,84 @@ jobs:
           cat body3.json; echo
           test "$code" = "503"
           if docker logs demo3 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi
+
+  space-app:
+    name: ZeroGPU Space app serves cached mode (Gradio, emulated ZeroGPU, no GPU)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Cache embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-all-MiniLM-L6-v2
+
+      - name: Install what the Space installs (CPU build of the same torch)
+        run: |
+          python -m pip install --upgrade pip
+          torch=$(sed -n 's/^torch==//p' deploy/hf-space-zerogpu/requirements.txt)
+          pip install "torch==$torch" --index-url https://download.pytorch.org/whl/cpu
+          pip install ./packages/contracts ./services/triage-worker "./apps/demo[space]" spaces
+
+      - name: Bundle the Space from this commit
+        run: python deploy/hf-space-zerogpu/bundle.py "$(git rev-parse HEAD)" "$RUNNER_TEMP/space"
+
+      - name: Smoke test under emulated ZeroGPU (CUDA emulation on, stub device API)
+        run: |
+          # ZeroGPU sets SPACES_ZERO_GPU and serves a device API; `import spaces` then patches torch to emulate CUDA
+          python -c "
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+          class H(BaseHTTPRequestHandler):
+              def ok(self):
+                  print(self.command, self.path, flush=True)
+                  self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+              do_GET = do_POST = ok
+              def log_message(self, *a): pass
+          HTTPServer(('127.0.0.1', 7899), H).serve_forever()" > device-api.log 2>&1 &
+          cd "$RUNNER_TEMP/space"
+          SPACES_ZERO_GPU=true SPACES_ZERO_DEVICE_API_URL=http://127.0.0.1:7899 python app.py > "$RUNNER_TEMP/space.log" 2>&1 &
+          for i in $(seq 1 90); do curl -fs localhost:7860/healthz | grep -q '"replay"' && break; sleep 2; done
+          curl -fs localhost:7860/healthz; echo
+          curl -fs localhost:7860/ | grep -qi gradio
+          python3 - <<'PY'
+          import glob, json, urllib.error, urllib.request
+          from gradio_client import Client
+          U = "http://localhost:7860"
+
+          def post(data):
+              req = urllib.request.Request(U + "/triage", data=data, headers={"content-type": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return r.status, r.headers, json.load(r)
+              except urllib.error.HTTPError as e:
+                  return e.code, e.headers, json.load(e)
+
+          health = json.load(urllib.request.urlopen(U + "/healthz"))
+          cassettes = len(glob.glob("tests/harness/cassettes/*.json"))
+          assert health["mode"] == "cached" and health["recordings"]["replay"] == cassettes, (health, cassettes)
+          samples = {s["id"]: s for s in json.load(urllib.request.urlopen(U + "/samples"))}
+          code, h, body = post(json.dumps({"alert": samples["T4_brute_force_ssh"]["alert"]}).encode())
+          assert code == 200 and h.get("X-Demo-Replay-Case") == "T4_brute_force_ssh", (code, body)
+          code, h, body = post(json.dumps({"alert": samples["OOC-004"]["alert"]}).encode())
+          assert code == 200 and body["guardrail_triggered"] and not body["evidence"]["chunks_retrieved"], body
+          code, h, body = post(b'{"alert": "canary-9f3a 5000 failed ssh logins from 203.0.113.9 against srv-bastion-01"}')
+          assert code == 404 and body["status"] == "not_recorded", (code, body)
+          for raw in (b'{"alert": "canary-5e1d \\udc9f"}', b'{"alert": NaN}'):
+              code, h, body = post(raw)
+              assert code == 422 and body["status"] == "invalid_request", (code, body)
+          # the page's own endpoint: same API in process, and a whitespace-only edit keeps the recording
+          result, evidence, f = Client(U + "/", verbose=False).predict(
+              samples["T4_brute_force_ssh"]["alert"] + "\n\n", api_name="/run_triage")
+          assert "replayed from the harness recording of case `T4_brute_force_ssh`" in result, result[:300]
+          print("space ok:", json.dumps(health["recordings"]))
+          PY
+          grep -q "POST /startup-report" "$GITHUB_WORKSPACE/device-api.log"
+          if grep -E 'canary-9f3a|canary-5e1d|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi
