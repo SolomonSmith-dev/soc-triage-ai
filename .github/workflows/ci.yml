@@ -238,6 +238,7 @@ jobs:
   space-app:
     name: ZeroGPU Space app serves cached mode (Gradio, emulated ZeroGPU, no GPU)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -254,15 +255,40 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-all-MiniLM-L6-v2
 
-      - name: Install what the Space installs (torch from PyPI, as on the Space)
-        run: |
-          python -m pip install --upgrade pip
-          # PyPI's torch has the CUDA bindings that ZeroGPU's torch patch reads; the CPU-only wheel lacks them
-          pip install "torch==$(sed -n 's/^torch==//p' deploy/hf-space-zerogpu/requirements.txt)"
-          pip install ./packages/contracts ./services/triage-worker "./apps/demo[space]" spaces
-
       - name: Bundle the Space from this commit
         run: python deploy/hf-space-zerogpu/bundle.py "$(git rev-parse HEAD)" "$RUNNER_TEMP/space"
+
+      - name: Install what the Space installs, from the bundle's requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          # The Space installs the app from GitHub archives of the pinned commit; an archive of this commit stands in
+          # for them, so the #subdirectory references are the ones under test. torch comes from PyPI, as there.
+          sha=$(git rev-parse HEAD)
+          git archive --format=tar.gz --prefix=soc-triage-ai/ HEAD > "$RUNNER_TEMP/src.tar.gz"
+          sed "s#https://github.com/SolomonSmith-dev/soc-triage-ai/archive/$sha.tar.gz#file://$RUNNER_TEMP/src.tar.gz#" \
+            "$RUNNER_TEMP/space/requirements.txt" > "$RUNNER_TEMP/requirements-ci.txt"
+          test "$(grep -c " @ file://$RUNNER_TEMP/src.tar.gz#subdirectory=" "$RUNNER_TEMP/requirements-ci.txt")" = 3
+          # the Space adds Gradio at sdk_version, and ZeroGPU adds `spaces`
+          pip install -r "$RUNNER_TEMP/requirements-ci.txt" \
+            "gradio==$(sed -n 's/^sdk_version: //p' "$RUNNER_TEMP/space/README.md")" spaces
+
+      - name: A failed ZeroGPU startup report stops the app
+        run: |
+          python -c "
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+          class H(BaseHTTPRequestHandler):
+              def fail(self):
+                  self.send_response(500); self.end_headers(); self.wfile.write(b'{}')
+              do_GET = do_POST = fail
+              def log_message(self, *a): pass
+          HTTPServer(('127.0.0.1', 7898), H).serve_forever()" &
+          cd "$RUNNER_TEMP/space"
+          code=0
+          SPACES_ZERO_GPU=true SPACES_ZERO_DEVICE_API_URL=http://127.0.0.1:7898 GRADIO_SERVER_PORT=7861 \
+            timeout 180 python app.py > "$RUNNER_TEMP/fail.log" 2>&1 || code=$?
+          tail -5 "$RUNNER_TEMP/fail.log"
+          # exit 124 would mean it was still serving, with a page whose queue never started, when timeout stopped it
+          test "$code" -ne 0 && test "$code" -ne 124
 
       - name: Smoke test under emulated ZeroGPU (CUDA emulation on, stub device API)
         run: |
@@ -275,25 +301,30 @@ jobs:
                   self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
               do_GET = do_POST = ok
               def log_message(self, *a): pass
-          HTTPServer(('127.0.0.1', 7899), H).serve_forever()" > device-api.log 2>&1 &
+          HTTPServer(('127.0.0.1', 7899), H).serve_forever()" > "$RUNNER_TEMP/device-api.log" 2>&1 &
           cd "$RUNNER_TEMP/space"
-          trap 'echo "--- app log"; tail -60 "$RUNNER_TEMP/space.log"; echo "--- device API"; cat "$GITHUB_WORKSPACE/device-api.log"' ERR
+          trap 'echo "--- app log"; tail -60 "$RUNNER_TEMP/space.log"; echo "--- device API"; cat "$RUNNER_TEMP/device-api.log"' ERR
           SPACES_ZERO_GPU=true SPACES_ZERO_DEVICE_API_URL=http://127.0.0.1:7899 python app.py > "$RUNNER_TEMP/space.log" 2>&1 &
           for i in $(seq 1 90); do curl -fs localhost:7860/healthz | grep -q '"replay"' && break; sleep 2; done
           curl -fs localhost:7860/healthz; echo
           curl -fs localhost:7860/ | grep -qi gradio
-          python3 - <<'PY'
-          import glob, json, urllib.error, urllib.request
+          curl -fsI localhost:7860/ | grep -qi "^content-security-policy: img-src 'self'"
+          timeout 300 python3 - <<'PY'
+          import glob, http.client, json, urllib.error, urllib.request
           from gradio_client import Client
           U = "http://localhost:7860"
 
-          def post(data):
-              req = urllib.request.Request(U + "/triage", data=data, headers={"content-type": "application/json"})
+          def request(path, data=None, ctype="application/json", timeout=60):
+              req = urllib.request.Request(U + path, data=data, headers={"content-type": ctype})
               try:
-                  with urllib.request.urlopen(req, timeout=60) as r:
-                      return r.status, r.headers, json.load(r)
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.status, r.headers, r.read()
               except urllib.error.HTTPError as e:
-                  return e.code, e.headers, json.load(e)
+                  return e.code, e.headers, e.read()
+
+          def post(data):
+              code, h, raw = request("/triage", data)
+              return code, h, json.loads(raw)
 
           health = json.load(urllib.request.urlopen(U + "/healthz"))
           cassettes = len(glob.glob("tests/harness/cassettes/*.json"))
@@ -308,11 +339,50 @@ jobs:
           for raw in (b'{"alert": "canary-5e1d \\udc9f"}', b'{"alert": NaN}'):
               code, h, body = post(raw)
               assert code == 422 and body["status"] == "invalid_request", (code, body)
+          assert request("/triage", b'{"alert": "' + b"a" * 300_000 + b'"}')[0] == 413
+
           # the page's own endpoint: same API in process, and a whitespace-only edit keeps the recording
-          result, evidence, f = Client(U + "/", verbose=False).predict(
-              samples["T4_brute_force_ssh"]["alert"] + "\n\n", api_name="/run_triage")
+          result, evidence, case_json = Client(U + "/", verbose=False).submit(
+              samples["T4_brute_force_ssh"]["alert"] + "\n\n", api_name="/run_triage").result(timeout=120)
           assert "replayed from the harness recording of case `T4_brute_force_ssh`" in result, result[:300]
+
+          # the page's routes follow the API's logging rules: malformed or mismatched calls log no request text
+          for path in ("/gradio_api/queue/join", "/gradio_api/call/run_triage"):
+              for raw in (b'{"data": "canary-7c1d \\udc9f", "fn_index": 0, "session_hash": "ci"}',
+                          b'{"data": {"alert": "canary-7c1d", "n": NaN}, "fn_index": 0, "session_hash": "ci"}'):
+                  code, h, text = request(path, raw)
+                  assert code == 422 and b"canary" not in text, (path, code, text[:200])
+
+          def call(data):
+              code, h, text = request("/gradio_api/call/run_triage", json.dumps({"data": data}).encode())
+              assert code == 200, (code, text[:200])
+              event = json.loads(text)["event_id"]
+              return request(f"/gradio_api/call/run_triage/{event}", timeout=120)[2].decode()
+
+          assert "event: complete" in call(["canary-7c1e 900 failed ssh logins from 203.0.113.9", "extra"])
+          assert "event: error" in call([])  # too few inputs: Gradio's error, which the app logs by type only
+
+          config = json.load(urllib.request.urlopen(U + "/config"))
+          chooser = next(c["id"] for c in config["components"] if c.get("type") == "dropdown")
+          fn = next(d["id"] for d in config["dependencies"] if d["inputs"] == [chooser])
+          code, h, text = request("/gradio_api/queue/join", json.dumps(
+              {"data": ["canary-7c1f not a case id"], "fn_index": fn, "session_hash": "ci-chooser"}).encode())
+          assert code == 200, (code, text[:200])
+          with urllib.request.urlopen(U + "/gradio_api/queue/data?session_hash=ci-chooser", timeout=60) as r:
+              for line in r:
+                  if b"process_completed" in line:
+                      break
+          try:  # what a stale tab sends after a restart; the stream may end early, the log is what is checked
+              request("/gradio_api/queue/data?session_hash=ci-unknown", timeout=10)
+          except (OSError, http.client.HTTPException):
+              pass
+
+          boundary = "ci-boundary"
+          upload = (f'--{boundary}\r\nContent-Disposition: form-data; name="files"; filename="x.bin"\r\n\r\n'.encode()
+                    + b"0" * 5000 + f"\r\n--{boundary}--\r\n".encode())
+          assert request("/gradio_api/upload", upload, f"multipart/form-data; boundary={boundary}")[0] == 413
           print("space ok:", json.dumps(health["recordings"]))
           PY
-          grep -q "POST /startup-report" "$GITHUB_WORKSPACE/device-api.log"
-          if grep -E 'canary-9f3a|canary-5e1d|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi
+          grep -q "POST /startup-report" "$RUNNER_TEMP/device-api.log"
+          grep -q "event=page_event_error error=ValueError" "$RUNNER_TEMP/space.log"
+          if grep -E 'canary-|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback|Received inputs' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi

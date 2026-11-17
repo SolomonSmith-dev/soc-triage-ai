@@ -2,6 +2,11 @@
 # Gradio comes from sdk_version in README.md, and ZeroGPU provides `spaces`.
 # torch: the newest version on ZeroGPU's supported list (huggingface.co/docs/hub/spaces-zerogpu).
 torch==2.13.0
+# The embedding stack, pinned to the versions CI's space-app job installs and checks the recordings with. pip does
+# not hold transformers to a torch it supports, so an unpinned release could break with the torch above.
+sentence-transformers==6.3.0
+transformers==5.23.0
+tokenizers==0.23.3
 soc-contracts @ https://github.com/SolomonSmith-dev/soc-triage-ai/archive/main.tar.gz#subdirectory=packages/contracts
 triage-engine @ https://github.com/SolomonSmith-dev/soc-triage-ai/archive/main.tar.gz#subdirectory=services/triage-worker
 soc-demo @ https://github.com/SolomonSmith-dev/soc-triage-ai/archive/main.tar.gz#subdirectory=apps/demo

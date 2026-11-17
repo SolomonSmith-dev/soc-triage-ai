@@ -4,13 +4,15 @@ import os
 import httpx
 import streamlit as st
 
+from soc_demo.guard import DemoConfig
 from soc_demo.present import (
     CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, download_name,
-    is_known_miss, option_label,
+    is_known_miss, md_code, md_literal, option_label,
 )
 from triage_engine.extractors import extract_observables
 
 API_URL = os.environ.get("DEMO_API_URL", "http://127.0.0.1:8000")
+MAX_ALERT_CHARS = DemoConfig.from_env().max_alert_chars  # the API's limit, from the same environment
 
 st.set_page_config(page_title="SOC Triage AI demo", page_icon=":material/shield:", layout="wide")
 
@@ -90,11 +92,13 @@ alert = st.text_area("Alert", key="alert", height=140,
 if CACHED:
     st.caption(EXACT_TEXT_NOTE)
 
-if alert.strip():
+if len(alert) > MAX_ALERT_CHARS:  # the API refuses these before extraction; the regexes are slow on some long input
+    st.caption(f"Alert is {len(alert):,} characters; the demo accepts up to {MAX_ALERT_CHARS:,}.")
+elif alert.strip():
     obs = {k: v for k, v in extract_observables(alert).items() if v}
     if obs:
         st.caption("Observables (regex, runs before any model call): " +
-                   "  ".join(f"`{k}`: {', '.join(v)}" for k, v in obs.items()))
+                   "  ".join(f"`{k}`: " + ", ".join(map(md_code, v)) for k, v in obs.items()))
 
 if st.button("Run triage", type="primary", disabled=not alert.strip()):
     with st.spinner("Retrieving context and triaging..."):
@@ -125,10 +129,12 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             st.warning("Guardrail triggered: the system refused to fabricate a triage. Manual analyst review required.")
             if not c["evidence"]["chunks_retrieved"]:
                 st.caption("No model call was made: no corpus chunk reached the similarity threshold.")
-        st.write(t["summary"])
-        st.markdown("**Recommended actions**\n" + "\n".join(f"{i}. {x}" for i, x in enumerate(t["recommended_actions"], 1)))
-        st.markdown("**MITRE ATT&CK:** " + (", ".join(t["mitre_techniques"]) or "none"))
-        st.markdown("**Reasoning:** " + t["reasoning"])
+        # model text is shown as text, so an injected alert cannot get Markdown (a remote image) into the page
+        st.markdown(md_literal(t["summary"]))
+        st.markdown("**Recommended actions**\n" +
+                    "\n".join(f"{i}. {md_literal(x)}" for i, x in enumerate(t["recommended_actions"], 1)))
+        st.markdown("**MITRE ATT&CK:** " + (", ".join(map(md_literal, t["mitre_techniques"])) or "none"))
+        st.markdown("**Reasoning:** " + md_literal(t["reasoning"]))
         with st.expander(f"Evidence ({len(c['evidence']['chunks_retrieved'])} chunks, avg score {c['evidence']['avg_retrieval_score']})"):
             for ch in c["evidence"]["chunks_retrieved"]:
                 st.markdown(f"`{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}")

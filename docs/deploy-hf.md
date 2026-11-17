@@ -14,9 +14,11 @@ Use `/usr/bin/grep` and `/bin/ls` as written. Work under `~/Projects`, not Deskt
 
 ## 0. Check main
 
-1. The commit you deploy must be on `main` and include the ZeroGPU Space. Done check, the first line must print a 40-character hash and the `ls-tree` line must print two entries:
+1. The commit you deploy must be on `main` and include the ZeroGPU Space, and the local checkout must be at that commit: step 2 runs its `bundle.py`, which refuses to run from any other commit. Done check, the first two lines print the same 40-character hash and the `ls-tree` line prints two entries:
    ```bash
-   git -C ~/Projects/soc-triage-ai fetch origin && git -C ~/Projects/soc-triage-ai rev-parse origin/main
+   git -C ~/Projects/soc-triage-ai switch main && git -C ~/Projects/soc-triage-ai pull --ff-only
+   git -C ~/Projects/soc-triage-ai rev-parse origin/main
+   git -C ~/Projects/soc-triage-ai rev-parse HEAD
    git -C ~/Projects/soc-triage-ai ls-tree origin/main deploy/hf-space-zerogpu/bundle.py apps/demo/soc_demo/space.py
    ```
 2. CI must be green on that commit, in particular `space-app` and `harness-replay`.

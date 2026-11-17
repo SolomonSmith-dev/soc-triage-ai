@@ -168,3 +168,17 @@ def test_ip_salt_is_random_unless_configured(monkeypatch):
     assert a != b and len(a) == 32 and DemoConfig().ip_salt != DemoConfig().ip_salt
     monkeypatch.setenv("DEMO_IP_SALT", "fixed-salt")
     assert DemoConfig.from_env().ip_salt == "fixed-salt"
+
+
+def test_oversized_bodies_are_refused_before_parsing(tmp_path, caplog):
+    c = app(tmp_path, lambda b: (StubEngine(result(["a"])), None))
+    big = b'{"alert": "' + CANARY.encode() + b"a" * api_mod.MAX_BODY_BYTES + b'"}'
+    with caplog.at_level(logging.DEBUG):
+        r = c.post("/triage", content=big, headers={"content-type": "application/json"})
+        assert r.status_code == 413 and r.json()["status"] == "body_too_large"
+        # sent without a length (chunked), the body is cut off at the limit instead of read to the end
+        chunked = c.post("/triage", content=iter([big[:200_000], big[200_000:]]),
+                         headers={"content-type": "application/json"})
+        assert chunked.status_code == 400
+        assert c.post("/triage", json={"alert": "short alert"}).status_code == 200
+    assert CANARY not in logged(caplog)

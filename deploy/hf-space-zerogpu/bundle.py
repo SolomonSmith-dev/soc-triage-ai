@@ -30,6 +30,9 @@ def bundle(sha: str, out: Path) -> dict[str, int]:
     """Returns how many cassettes and cases the Space will serve from."""
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise SystemExit(f"expected a 40-character commit hash, got {sha!r}")
+    if _git("show", f"{sha}:{HERE}/bundle.py") != Path(__file__).read_bytes():
+        # the bundling rules must come from the pinned commit too, not from whatever the checkout holds
+        raise SystemExit(f"this bundle.py differs from the one at {sha[:7]}: check out that commit first")
     out.mkdir(parents=True, exist_ok=True)
     for name in ("app.py", "README.md"):
         (out / name).write_bytes(_git("show", f"{sha}:{HERE}/{name}"))

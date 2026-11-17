@@ -4,6 +4,9 @@ Kept in one place so the pages label cases, match recordings and flag documented
 """
 from __future__ import annotations
 
+import re
+import string
+
 # Quick picks by harness case id. A page shows one only if GET /samples lists it, which in cached mode means
 # the serving machine verified that it replays or refuses.
 FEATURED = {
@@ -50,3 +53,22 @@ def is_known_miss(sample: dict | None, envelope: dict) -> bool:
 def download_name(envelope: dict, replay_case: str | None) -> str:
     # the body has no replay field (the contract has none yet), so the file name carries the provenance
     return f"{envelope['case_id']}_replay-{replay_case}.json" if replay_case else f"{envelope['case_id']}.json"
+
+
+_SURROGATE = re.compile("[\ud800-\udfff]")
+
+
+def md_literal(text: str) -> str:
+    """Text that Markdown shows as itself. ASCII punctuation becomes a numeric character reference, which renders as
+    the character but never as syntax, so alert or model text cannot open a link, an image, an HTML tag or emphasis.
+    Lone surrogates become U+FFFD so the page can always encode the result."""
+    return "".join(f"&#{ord(c)};" if c in string.punctuation else c for c in _SURROGATE.sub("\ufffd", text))
+
+
+def md_code(text: str) -> str:
+    """Text as a Markdown code span, shown verbatim. The fence is one backtick longer than any backtick run in the
+    text, so the text cannot close the span early and turn the rest into Markdown."""
+    text = _SURROGATE.sub("\ufffd", text).replace("\n", " ")
+    fence = "`" * (max(map(len, re.findall("`+", text)), default=0) + 1)
+    pad = " " if text[:1] == "`" or text[-1:] == "`" else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
