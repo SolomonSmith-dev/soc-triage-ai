@@ -268,9 +268,11 @@ jobs:
           sed "s#https://github.com/SolomonSmith-dev/soc-triage-ai/archive/$sha.tar.gz#file://$RUNNER_TEMP/src.tar.gz#" \
             "$RUNNER_TEMP/space/requirements.txt" > "$RUNNER_TEMP/requirements-ci.txt"
           test "$(grep -c " @ file://$RUNNER_TEMP/src.tar.gz#subdirectory=" "$RUNNER_TEMP/requirements-ci.txt")" = 3
-          # the Space adds Gradio at sdk_version, and ZeroGPU adds `spaces`
-          pip install -r "$RUNNER_TEMP/requirements-ci.txt" \
-            "gradio==$(sed -n 's/^sdk_version: //p' "$RUNNER_TEMP/space/README.md")" spaces
+          # The rest of Hugging Face's ZeroGPU install line, from the Space's build log: Gradio at sdk_version, and
+          # spaces pinned to 0.51.3, which sends ZeroGPU's startup report only from demo.launch()
+          pip install -r "$RUNNER_TEMP/requirements-ci.txt" "torch<=2.13.0" \
+            "gradio[oauth,mcp]==$(sed -n 's/^sdk_version: //p' "$RUNNER_TEMP/space/README.md")" \
+            "uvicorn>=0.14.0" "websockets>=10.4" spaces==0.51.3
 
       - name: A failed ZeroGPU startup report stops the app
         run: |
@@ -383,8 +385,33 @@ jobs:
           assert request("/gradio_api/upload", upload, f"multipart/form-data; boundary={boundary}")[0] == 413
           print("space ok:", json.dumps(health["recordings"]))
           PY
-          grep -q "POST /startup-report" "$RUNNER_TEMP/device-api.log"
+          # ZeroGPU stops a Space that sends no startup report; under spaces 0.51.3 the app sends it, once
+          test "$(grep -c "POST /startup-report" "$RUNNER_TEMP/device-api.log")" = 1
+          grep -q "event=zerogpu_startup_report sent_by=app" "$RUNNER_TEMP/space.log"
           grep -q "event=page_event_error error=ValueError" "$RUNNER_TEMP/space.log"
           # ZeroGPU stops a Space at startup unless a Gradio handler carries @spaces.GPU
           grep -q "event=page_built gpu_handlers=1" "$RUNNER_TEMP/space.log"
           if grep -E 'canary-|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback|Received inputs' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi
+
+      - name: Newest spaces still sends exactly one startup report
+        run: |
+          # From 0.52, spaces sends the report itself for a mounted app; the app must not send a second
+          pip install -U spaces
+          python -c "
+          from http.server import BaseHTTPRequestHandler, HTTPServer
+          class H(BaseHTTPRequestHandler):
+              def ok(self):
+                  print(self.command, self.path, flush=True)
+                  self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+              do_GET = do_POST = ok
+              def log_message(self, *a): pass
+          HTTPServer(('127.0.0.1', 7897), H).serve_forever()" > "$RUNNER_TEMP/device-api-new.log" 2>&1 &
+          cd "$RUNNER_TEMP/space"
+          trap 'echo "--- app log"; tail -40 "$RUNNER_TEMP/space-new.log"; cat "$RUNNER_TEMP/device-api-new.log"' ERR
+          SPACES_ZERO_GPU=true SPACES_ZERO_DEVICE_API_URL=http://127.0.0.1:7897 GRADIO_SERVER_PORT=7862 \
+            python app.py > "$RUNNER_TEMP/space-new.log" 2>&1 &
+          for i in $(seq 1 90); do curl -fs localhost:7862/healthz | grep -q '"replay"' && break; sleep 2; done
+          curl -fs localhost:7862/healthz; echo
+          pip show spaces | grep -i "^version"
+          test "$(grep -c "POST /startup-report" "$RUNNER_TEMP/device-api-new.log")" = 1
+          grep -q "event=page_built gpu_handlers=1" "$RUNNER_TEMP/space-new.log"
