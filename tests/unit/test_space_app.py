@@ -244,3 +244,13 @@ def test_a_stale_page_stream_ends_cleanly_and_logs_one_line(tmp_path, caplog):
     assert r.status_code == 200
     assert "event=unhandled_error status=aborted route=/gradio_api/queue/data" in caplog.text
     assert "Traceback" not in caplog.text
+
+
+def test_the_zerogpu_handler_is_a_hidden_no_op(tmp_path):
+    # ZeroGPU stops a Space whose Gradio handlers carry no @spaces.GPU; outside ZeroGPU it is the plain function
+    blocks = next(r.app for r in space(tmp_path).routes if isinstance(r, Mount)).get_blocks()
+    gpu = [f for f in blocks.fns.values() if f.fn is space_mod.zerogpu_handler]
+    assert len(gpu) == 1 and not gpu[0].inputs and not gpu[0].outputs and gpu[0].api_visibility == "private"
+    button = blocks.blocks[gpu[0].targets[0][0]]
+    assert isinstance(button, gr.Button) and button.visible is False
+    assert space_mod.zerogpu_handler() is None

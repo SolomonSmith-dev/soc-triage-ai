@@ -1,7 +1,7 @@
 """Hugging Face Space entry point: Gradio SDK on ZeroGPU hardware.
 
 The app is soc_demo.space, installed from GitHub at the commit requirements.txt pins. Cached mode reads the
-harness recordings and cases copied next to this file (tests/harness/). No route requests a GPU.
+harness recordings and cases copied next to this file (tests/harness/). No visitor action requests a GPU.
 """
 import os
 
@@ -9,7 +9,7 @@ import os
 # where the cassettes were checked, before anything loads torch.
 os.environ.setdefault("SOC_EMBED_DEVICE", "cpu")
 
-try:  # ZeroGPU wants `spaces` imported before torch. Elsewhere it may be absent, and nothing here needs it.
+try:  # ZeroGPU wants `spaces` imported before torch. Elsewhere it may be absent, and nothing needs it.
     import spaces  # noqa: F401
 except ImportError:
     pass

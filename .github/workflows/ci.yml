@@ -385,4 +385,6 @@ jobs:
           PY
           grep -q "POST /startup-report" "$RUNNER_TEMP/device-api.log"
           grep -q "event=page_event_error error=ValueError" "$RUNNER_TEMP/space.log"
+          # ZeroGPU stops a Space at startup unless a Gradio handler carries @spaces.GPU
+          grep -q "event=page_built gpu_handlers=1" "$RUNNER_TEMP/space.log"
           if grep -E 'canary-|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback|Received inputs' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi

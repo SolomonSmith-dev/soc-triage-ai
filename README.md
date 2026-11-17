@@ -12,7 +12,7 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 
 ## Evidence
 
-- **172 pytest tests** across three CI jobs: 151 in `tests/unit`, 3 in `packages/contracts/tests`, 6 in `tests/harness` (the replay gate and the demo's cached-mode gate), 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 154 in `tests/unit` and `packages/contracts/tests` run offline with no key.
+- **173 pytest tests** across three CI jobs: 152 in `tests/unit`, 3 in `packages/contracts/tests`, 6 in `tests/harness` (the replay gate and the demo's cached-mode gate), 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 155 in `tests/unit` and `packages/contracts/tests` run offline with no key.
 - **100 harness cases**, 60 standard and 40 adversarial, 7 reviewed by me and 93 drafted by Claude and pending review (`python -m tests.harness.loader --validate`).
 - **Live run 2026-10-09**, `claude-sonnet-4-5`, 76 of 100 passing, 0.59 USD spent (`tests/harness/harness_results.json`, `meta` and `results`).
 - **CI** ([`ci.yml`](.github/workflows/ci.yml), 6 jobs): unit tests for the engine, the demo API and both demo pages, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now, and checks that every cassette replays through the public demo API), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, a Docker smoke test of the public demo in cached and live modes, and a smoke test of the Hugging Face Space app with ZeroGPU's CUDA emulation on. Both smoke tests fail if posted alert text, an unredacted engine message or an unhandled error reaches the logs.
@@ -58,7 +58,7 @@ pip install -r requirements.txt            # streamlit for the dev console
 No API key needed (the first retrieval call downloads the `all-MiniLM-L6-v2` embedding model):
 
 ```bash
-pytest tests/unit packages/contracts/tests          # 154 offline tests
+pytest tests/unit packages/contracts/tests          # 155 offline tests
 python -m tests.harness.loader --validate            # case files and review status
 python -m tests.harness.retrieval_eval               # retrieval metrics, local embeddings
 python -m tests.harness.test_harness --replay        # replay recorded model replies

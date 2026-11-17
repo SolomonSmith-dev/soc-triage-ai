@@ -4,8 +4,9 @@ Hugging Face hosts Docker Spaces only on paid plans, while a free account can ho
 ZeroGPU hardware. This module serves the same API as the Docker image (POST /triage, GET /samples,
 /healthz, /budget) and mounts a Gradio page at /. The page calls that API in process and forwards
 the visitor's X-Forwarded-For, so the page and direct API calls pass the same guards and the same
-logging rules. Nothing here asks for a GPU: the embedding model runs on the CPU
-(SOC_EMBED_DEVICE=cpu), where the cassettes were checked.
+logging rules. No visitor action uses a GPU: the embedding model runs on the CPU (SOC_EMBED_DEVICE=cpu),
+where the cassettes were checked. ZeroGPU still refuses to start a Space unless one Gradio event handler
+carries @spaces.GPU, so zerogpu_handler is that handler: a no-op behind a hidden control.
 """
 from __future__ import annotations
 
@@ -30,6 +31,11 @@ from soc_demo.present import (
     is_known_miss, md_code, md_literal, option_label,
 )
 from triage_engine.extractors import extract_observables
+
+try:  # ZeroGPU's package. Absent in local runs and CI's unit job, where nothing needs it.
+    import spaces
+except ImportError:
+    spaces = None
 
 logger = logging.getLogger("soc_demo")
 
@@ -65,6 +71,17 @@ GRADIO_PRINTERS = ("gradio.queueing", "gradio.routes", "gradio.route_utils")  # 
 def _quiet_gradio_tracebacks() -> None:
     for name in GRADIO_PRINTERS:
         sys.modules[name].traceback = _GradioTraceback()
+
+
+def _zerogpu_noop() -> None:
+    return None
+
+
+# ZeroGPU checks at startup that a Gradio event handler carries @spaces.GPU and stops the Space if none does. The
+# demo needs no GPU, so this decorated no-op is wired to a hidden control the page never shows. A direct call
+# through Gradio's queue costs the caller one second of their own GPU quota and does nothing else. Outside ZeroGPU
+# the decorator returns the function unchanged.
+zerogpu_handler = spaces.GPU(duration=1)(_zerogpu_noop) if spaces is not None else _zerogpu_noop
 
 
 def _api(app: FastAPI) -> httpx.AsyncClient:
@@ -242,6 +259,8 @@ def build_ui(api_app: FastAPI, max_alert_chars: int) -> gr.Blocks:
         alert.change(lambda text: observables_md(text, max_alert_chars), inputs=alert, outputs=observables,
                      api_visibility="private", concurrency_limit=1)
         run_button.click(run, inputs=alert, outputs=[result, evidence, case_json], api_name="run_triage")
+        gpu_check = gr.Button("ZeroGPU startup check", visible=False)  # see zerogpu_handler
+        gpu_check.click(zerogpu_handler, inputs=None, outputs=None, api_visibility="private")
     ui.queue(default_concurrency_limit=8, max_size=64)
     return ui
 
@@ -285,6 +304,9 @@ def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm
     page = next(r.app for r in app.routes if isinstance(r, Mount) and isinstance(r.app, FastAPI))
     page.add_exception_handler(RequestValidationError, _invalid_page_request)
     _quiet_gradio_tracebacks()
+    # 1 on ZeroGPU, where the decorator marks the handler; ZeroGPU's startup check needs it there
+    logger.info("event=page_built gpu_handlers=%d",
+                sum(hasattr(f.fn, "zerogpu") for f in page.get_blocks().fns.values()))
     app.add_middleware(PageHeaders)
     return app
 
