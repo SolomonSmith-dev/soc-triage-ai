@@ -5,8 +5,9 @@ ZeroGPU hardware. This module serves the same API as the Docker image (POST /tri
 /healthz, /budget) and mounts a Gradio page at /. The page calls that API in process and forwards
 the visitor's X-Forwarded-For, so the page and direct API calls pass the same guards and the same
 logging rules. No visitor action uses a GPU: the embedding model runs on the CPU (SOC_EMBED_DEVICE=cpu),
-where the cassettes were checked. ZeroGPU still refuses to start a Space unless one Gradio event handler
-carries @spaces.GPU, so zerogpu_handler is that handler: a no-op behind a hidden control.
+where the cassettes were checked. ZeroGPU still stops a Space that sends no startup report, and `spaces` sends
+one only when a @spaces.GPU function exists: zerogpu_handler is that function, a no-op behind a hidden control,
+and send_zerogpu_startup_report covers the `spaces` version that only reports from demo.launch().
 """
 from __future__ import annotations
 
@@ -82,6 +83,23 @@ def _zerogpu_noop() -> None:
 # through Gradio's queue costs the caller one second of their own GPU quota and does nothing else. Outside ZeroGPU
 # the decorator returns the function unchanged.
 zerogpu_handler = spaces.GPU(duration=1)(_zerogpu_noop) if spaces is not None else _zerogpu_noop
+
+
+def send_zerogpu_startup_report(app: FastAPI) -> bool:
+    """On ZeroGPU, send the startup report the platform waits for, unless `spaces` will send it itself. Returns
+    whether this sent it.
+
+    `spaces` sends the report from demo.launch(). From 0.52 it also sends it for an app built with
+    gr.mount_gradio_app, from a middleware it adds there. Hugging Face's ZeroGPU build installs spaces 0.51.3, which
+    does neither for this app: it is mounted and run with uvicorn. Without the report ZeroGPU stops the Space with
+    "No @spaces.GPU function detected during startup". The report needs a @spaces.GPU function: zerogpu_handler."""
+    if spaces is None or not spaces.config.Config.zero_gpu:
+        return False
+    if any(getattr(m.cls, "__name__", "") == "ZeroGPUMiddleware" and not m.kwargs.get("skip_zerogpu_startup")
+           for m in app.user_middleware):
+        return False
+    spaces.zero.startup()  # a failure raises, and the process exits before serving
+    return True
 
 
 def _api(app: FastAPI) -> httpx.AsyncClient:
@@ -315,7 +333,10 @@ def main() -> None:  # the Space's app.py calls this
     os.environ.setdefault("SOC_EMBED_DEVICE", "cpu")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     import uvicorn
-    # lifespan="on": a failed startup (ZeroGPU's startup report runs in it) stops the process. The default, "auto",
-    # would log it at INFO and serve a page whose queue never started.
-    uvicorn.run(create_space_app(), host=os.environ.get("GRADIO_SERVER_NAME", "0.0.0.0"),
+    app = create_space_app()
+    if send_zerogpu_startup_report(app):
+        logger.info("event=zerogpu_startup_report sent_by=app")
+    # lifespan="on": a failed startup (from spaces 0.52 the ZeroGPU startup report runs in it) stops the process.
+    # The default, "auto", would log it at INFO and serve a page whose queue never started.
+    uvicorn.run(app, host=os.environ.get("GRADIO_SERVER_NAME", "0.0.0.0"),
                 port=int(os.environ.get("GRADIO_SERVER_PORT", "7860")), access_log=False, lifespan="on")

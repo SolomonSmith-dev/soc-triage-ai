@@ -9,6 +9,7 @@ import re
 import subprocess
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -214,12 +215,35 @@ def test_live_mode_page_invites_pasting(tmp_path):
 
 
 def test_main_makes_a_failed_startup_fatal(monkeypatch):
-    seen = {}
+    seen = []
     monkeypatch.setattr(space_mod, "create_space_app", lambda: "app")
-    monkeypatch.setattr("uvicorn.run", lambda app, **kw: seen.update(kw, app=app))
+    monkeypatch.setattr(space_mod, "send_zerogpu_startup_report", lambda app: seen.append(("report", app)))
+    monkeypatch.setattr("uvicorn.run", lambda app, **kw: seen.append(("serve", app, kw["lifespan"])))
     space_mod.main()
-    # ZeroGPU's startup report runs in the lifespan; under "auto" a failure there leaves a page whose queue never starts
-    assert seen["app"] == "app" and seen["lifespan"] == "on"
+    # the report goes before serving; from spaces 0.52 it runs in the lifespan, where "auto" would swallow a failure
+    assert seen == [("report", "app"), ("serve", "app", "on")]
+
+
+class ZeroGPUMiddleware:  # the name spaces gives the middleware that sends the report for a mounted app (0.52)
+    def __init__(self, app, skip_zerogpu_startup=False):
+        self.app = app
+
+
+def test_the_startup_report_is_sent_once_whichever_spaces_version(monkeypatch):
+    sent = []
+    fake = SimpleNamespace(config=SimpleNamespace(Config=SimpleNamespace(zero_gpu=True)),
+                           zero=SimpleNamespace(startup=lambda: sent.append(1)))
+    monkeypatch.setattr(space_mod, "spaces", fake)
+    plain, own, skipping = FastAPI(), FastAPI(), FastAPI()
+    own.add_middleware(ZeroGPUMiddleware)
+    skipping.add_middleware(ZeroGPUMiddleware, skip_zerogpu_startup=True)
+    assert space_mod.send_zerogpu_startup_report(plain) is True and sent == [1]      # spaces 0.51: launch() only
+    assert space_mod.send_zerogpu_startup_report(own) is False and sent == [1]       # 0.52: its middleware sends it
+    assert space_mod.send_zerogpu_startup_report(skipping) is True and sent == [1, 1]
+    fake.config.Config.zero_gpu = False
+    assert space_mod.send_zerogpu_startup_report(plain) is False and sent == [1, 1]  # not on ZeroGPU
+    monkeypatch.setattr(space_mod, "spaces", None)
+    assert space_mod.send_zerogpu_startup_report(plain) is False
 
 
 def test_gradio_event_errors_are_logged_by_type_only(tmp_path, capfd, caplog):
