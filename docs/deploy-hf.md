@@ -47,7 +47,7 @@ python3 ~/Projects/soc-triage-ai/deploy/hf-space-zerogpu/bundle.py "$SHA" .
 
 Git asks for credentials: username `SolomonSmith-dev`, password a write-scoped token from huggingface.co/settings/tokens.
 
-Done check: `bundle.py` prints `92 files in tests/harness/cassettes, 100 files in tests/harness/cases`, the `grep` prints `3`, and `ls` shows `README.md  app.py  requirements.txt  tests`.
+Done check: `bundle.py` ends with `92 cassettes, 100 cases`, the `grep` prints `3`, and `ls` shows `README.md  app.py  requirements.txt  tests`.
 
 ```bash
 git add -A

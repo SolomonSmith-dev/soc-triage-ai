@@ -12,8 +12,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
-from pathlib import Path
 
 import gradio as gr
 import httpx
@@ -51,7 +49,7 @@ def observables_md(alert: str) -> str:
 
 
 def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple[str, str, str | None]:
-    """(result markdown, evidence markdown, download file name or None) for one POST /triage answer."""
+    """(result markdown, evidence markdown, case JSON name or None) for one POST /triage answer."""
     if status != 200:
         msg = NOT_RECORDED if body.get("status") == "not_recorded" else (
             body.get("message") or f"Request failed with status {status}.")
@@ -91,7 +89,7 @@ def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple
 async def page_triage(api_app: FastAPI, alert: str, samples: list[dict], mode: str,
                       forwarded: dict) -> tuple[str, str, str | None, dict]:
     """What the page's Run button does: POST /triage in process, as the visitor. Returns (result markdown,
-    evidence markdown, download file name or None, response body)."""
+    evidence markdown, case JSON name or None, response body)."""
     async with _api(api_app) as api:
         if not mode:  # a client that skipped the page load (gradio_client): fetch what the page would hold
             mode = (await api.get("/healthz")).json().get("mode", "live")
@@ -134,11 +132,10 @@ def build_ui(api_app: FastAPI) -> gr.Blocks:
         result, evidence, name, body = await page_triage(api_app, alert, samples, mode, _forwarded(request))
         if name is None:
             return result, evidence, gr.update(value=None, visible=False)
-        path = Path(tempfile.mkdtemp(prefix="soc-case-")) / name
-        path.write_text(json.dumps(body, indent=2))
-        return result, evidence, gr.update(value=str(path), visible=True)
+        # shown in the page, never written to the server's disk: the envelope carries the visitor's alert text
+        return result, evidence, gr.update(value=json.dumps(body, indent=2), label=f"Case JSON ({name})", visible=True)
 
-    with gr.Blocks(title="SOC Triage AI demo") as ui:
+    with gr.Blocks(title="SOC Triage AI demo", analytics_enabled=False) as ui:
         samples_state, mode_state = gr.State([]), gr.State("")
         gr.Markdown("# SOC Triage AI")
         intro = gr.Markdown()
@@ -156,7 +153,8 @@ def build_ui(api_app: FastAPI) -> gr.Blocks:
                 result = gr.Markdown()
                 with gr.Accordion("Evidence", open=False):
                     evidence = gr.Markdown()
-                download = gr.File(label="Case JSON", visible=False, interactive=False)
+                case_json = gr.Code(label="Case JSON", language="json", interactive=False, visible=False,
+                                    max_lines=30)
 
         ui.load(on_load, inputs=None, outputs=[samples_state, mode_state, intro, chooser, note, *buttons],
                 api_visibility="private")
@@ -165,7 +163,7 @@ def build_ui(api_app: FastAPI) -> gr.Blocks:
                          api_visibility="private")
         load_selected.click(pick, inputs=[samples_state, chooser], outputs=alert, api_visibility="private")
         alert.change(observables_md, inputs=alert, outputs=observables, api_visibility="private")
-        run_button.click(run, inputs=[alert, samples_state, mode_state], outputs=[result, evidence, download],
+        run_button.click(run, inputs=[alert, samples_state, mode_state], outputs=[result, evidence, case_json],
                          api_name="run_triage")
     ui.queue(default_concurrency_limit=8, max_size=64)
     return ui
@@ -173,8 +171,10 @@ def build_ui(api_app: FastAPI) -> gr.Blocks:
 
 def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm: bool = True) -> FastAPI:
     api_app = create_app(config, engine_factory, warm=warm)
-    # show_error=False: an exception's text never reaches the page. SSR needs a Node server; the page works without.
-    return gr.mount_gradio_app(api_app, build_ui(api_app), path="/", show_error=False, ssr_mode=False)
+    # show_error=False: an exception's text never reaches the page. run_history=False: nothing about a run is
+    # recorded, not even in the visitor's browser. SSR needs a Node server; the page works without.
+    return gr.mount_gradio_app(api_app, build_ui(api_app), path="/", show_error=False, ssr_mode=False,
+                               run_history=False)
 
 
 def main() -> None:  # the Space's app.py calls this

@@ -27,6 +27,7 @@ def _git(*args: str) -> bytes:
 
 
 def bundle(sha: str, out: Path) -> dict[str, int]:
+    """Returns how many cassettes and cases the Space will serve from."""
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise SystemExit(f"expected a 40-character commit hash, got {sha!r}")
     out.mkdir(parents=True, exist_ok=True)
@@ -40,13 +41,14 @@ def bundle(sha: str, out: Path) -> dict[str, int]:
     for d in DATA:
         shutil.rmtree(out / d, ignore_errors=True)
     with tarfile.open(fileobj=io.BytesIO(_git("archive", "--format=tar", sha, *DATA))) as tar:
-        tar.extractall(out, filter="data")
-    return {d: sum(1 for p in (out / d).rglob("*") if p.is_file()) for d in DATA}
+        # the "data" filter exists from Python 3.12 (and in 3.10/3.11 security releases); the archive is this repo's
+        tar.extractall(out, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
+    return {"cassettes": len(list((out / DATA[0]).glob("*.json"))), "cases": len(list((out / DATA[1]).rglob("*.yaml")))}
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
     counts = bundle(sys.argv[1], Path(sys.argv[2]))
-    print("wrote app.py, README.md, requirements.txt pinned to", sys.argv[1][:7] + ";",
-          ", ".join(f"{n} files in {d}" for d, n in counts.items()))
+    print(f"wrote app.py, README.md, requirements.txt pinned to {sys.argv[1][:7]}; "
+          f"{counts['cassettes']} cassettes, {counts['cases']} cases")

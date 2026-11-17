@@ -113,5 +113,5 @@ def test_bundle_pins_the_commit_and_replaces_the_data(tmp_path):
     requirements = (tmp_path / "requirements.txt").read_text()
     assert requirements.count(f"/archive/{head}.tar.gz#") == 3 and "main.tar.gz" not in requirements
     assert (tmp_path / "app.py").exists() and (tmp_path / "README.md").exists() and not stale.exists()
-    assert counts == {d: sum(1 for t in tracked if t.startswith(d + "/"))
-                      for d in ("tests/harness/cassettes", "tests/harness/cases")}
+    assert counts == {"cassettes": sum(1 for t in tracked if t.startswith("tests/harness/cassettes/") and t.endswith(".json")),
+                      "cases": sum(1 for t in tracked if t.startswith("tests/harness/cases/") and t.endswith(".yaml"))}
