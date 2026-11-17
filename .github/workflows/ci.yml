@@ -254,11 +254,11 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-all-MiniLM-L6-v2
 
-      - name: Install what the Space installs (CPU build of the same torch)
+      - name: Install what the Space installs (torch from PyPI, as on the Space)
         run: |
           python -m pip install --upgrade pip
-          torch=$(sed -n 's/^torch==//p' deploy/hf-space-zerogpu/requirements.txt)
-          pip install "torch==$torch" --index-url https://download.pytorch.org/whl/cpu
+          # PyPI's torch has the CUDA bindings that ZeroGPU's torch patch reads; the CPU-only wheel lacks them
+          pip install "torch==$(sed -n 's/^torch==//p' deploy/hf-space-zerogpu/requirements.txt)"
           pip install ./packages/contracts ./services/triage-worker "./apps/demo[space]" spaces
 
       - name: Bundle the Space from this commit
@@ -277,6 +277,7 @@ jobs:
               def log_message(self, *a): pass
           HTTPServer(('127.0.0.1', 7899), H).serve_forever()" > device-api.log 2>&1 &
           cd "$RUNNER_TEMP/space"
+          trap 'echo "--- app log"; tail -60 "$RUNNER_TEMP/space.log"; echo "--- device API"; cat "$GITHUB_WORKSPACE/device-api.log"' ERR
           SPACES_ZERO_GPU=true SPACES_ZERO_DEVICE_API_URL=http://127.0.0.1:7899 python app.py > "$RUNNER_TEMP/space.log" 2>&1 &
           for i in $(seq 1 90); do curl -fs localhost:7860/healthz | grep -q '"replay"' && break; sleep 2; done
           curl -fs localhost:7860/healthz; echo
