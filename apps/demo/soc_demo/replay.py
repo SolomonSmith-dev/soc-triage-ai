@@ -44,6 +44,7 @@ class HarnessCase:
     group: str  # "standard" or "adversarial:<type>", as in the harness results
     label: str
     alert: str  # verbatim, trailing newline included: the recorded prompt hash depends on every byte
+    expects_refusal: bool = False  # the harness label says the retrieval guardrail must refuse it
 
 
 def load_recordings(cassette_dir: str | Path) -> dict[str, Recording]:
@@ -67,12 +68,15 @@ def load_cases(cases_dir: str | Path) -> list[HarnessCase]:
     for path in sorted(Path(cases_dir).rglob("*.yaml")):
         d = yaml.safe_load(path.read_text(encoding="utf-8"))
         adv = d.get("adversarial")
+        notes = (d.get("notes") or "").strip()
         out.append(HarnessCase(
             case_id=d["id"],
             category=d["category"],
             group="standard" if not adv else f"adversarial:{adv['type']}",
-            label=(d.get("notes") or d["category"]).strip(),
+            # "migrated original" records where a case came from, not what it is
+            label=notes if notes and notes != "migrated original" else d["category"].replace("_", " "),
             alert=d["alert"],
+            expects_refusal=bool((d.get("expect") or {}).get("guardrail")),
         ))
     return out
 

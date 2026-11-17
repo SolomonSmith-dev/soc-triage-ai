@@ -29,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e packages/contracts
           pip install -e services/triage-worker
-          pip install -e apps/demo
+          pip install -e "apps/demo[ui]"   # streamlit, for the AppTest page tests
           pip install pytest
 
       - name: Run engine unit tests
@@ -172,6 +172,7 @@ jobs:
           for i in $(seq 1 90); do curl -fs localhost:7860/healthz | grep -q '"replay"' && break; sleep 2; done
           curl -fs localhost:7860/healthz; echo
           curl -fs localhost:7860/budget; echo
+          for i in $(seq 1 30); do curl -fs -o /dev/null localhost:7860/ && break; sleep 1; done
           curl -fs -o /dev/null localhost:7860/
           python3 - <<'PY'
           import glob, json, urllib.error, urllib.request
@@ -197,10 +198,19 @@ jobs:
           assert code == 200 and body["guardrail_triggered"] and not body["evidence"]["chunks_retrieved"], body
           code, h, body = post("canary-9f3a 5000 failed ssh logins from 203.0.113.9 against srv-bastion-01 overnight")
           assert code == 404 and body["status"] == "not_recorded", (code, body)
+          # bodies FastAPI's default handler would echo into a 500 and the log: a lone surrogate, NaN
+          for raw in (b'{"alert": "canary-5e1d \\udc9f"}', b'{"alert": NaN}'):
+              req = urllib.request.Request(U + "/triage", data=raw, headers={"content-type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=60)
+                  raise AssertionError("invalid body accepted")
+              except urllib.error.HTTPError as e:
+                  assert e.code == 422 and json.load(e)["status"] == "invalid_request", e.code
           print("cached mode ok:", json.dumps(health["recordings"]))
           PY
-          # neither the visitor's alert nor any recorded alert may appear in the container logs
-          if docker logs demo 2>&1 | grep -qE 'canary-9f3a|185\.220\.101\.45'; then echo "alert text leaked into logs"; exit 1; fi
+          # Neither a visitor's alert nor a recorded one may reach the container logs. The engine's own messages
+          # (refusal, model failure) only appear if redaction failed, and the uvicorn line only if an error escaped.
+          if docker logs demo 2>&1 | grep -E 'canary-9f3a|canary-5e1d|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application'; then echo "alert text or an unhandled error reached the logs"; exit 1; fi
           docker rm -f demo
 
       - name: Smoke test, live mode with a cap of zero tokens

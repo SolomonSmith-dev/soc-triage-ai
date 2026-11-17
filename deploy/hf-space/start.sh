@@ -7,7 +7,8 @@ export DEMO_API_URL="http://127.0.0.1:8000"
 export DEMO_STATE_PATH="${DEMO_STATE_PATH:-/tmp/soc-demo-budget.json}"
 
 uvicorn --factory soc_demo.api:app_factory --host 127.0.0.1 --port 8000 --no-access-log &
-streamlit run "$(python -c 'import soc_demo.ui as m; print(m.__file__)')" \
+# find_spec locates ui.py without running it: importing it would block on the API's startup check
+streamlit run "$(python -c 'import importlib.util as u; print(u.find_spec("soc_demo.ui").origin)')" \
   --server.port 8501 --server.address 127.0.0.1 --server.headless true \
   --server.enableCORS false --server.enableXsrfProtection false \
   --server.fileWatcherType none --browser.gatherUsageStats false &

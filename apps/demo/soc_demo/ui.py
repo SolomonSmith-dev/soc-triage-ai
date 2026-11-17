@@ -18,6 +18,7 @@ FEATURED = {
     "BEN-001": "Benign lookalike (backup job)",
     "OOC-004": "Out of scope (refusal)",
 }
+OUTCOME = {"replay": "recorded answer", "refusal": "refused at retrieval", "live": "live"}
 
 st.set_page_config(page_title="SOC Triage AI demo", page_icon=":material/shield:", layout="wide")
 
@@ -46,6 +47,15 @@ MODE = _try(api_mode, "unknown")
 CACHED = MODE == "cached"
 SAMPLES = _try(load_samples, []) if MODE != "unknown" else []
 BY_ID = {s["id"]: s for s in SAMPLES}
+# Recordings match on every byte, and each recorded alert ends in a newline. Map an alert that differs from one
+# only in leading or trailing whitespace back to it, so pressing Enter in the box does not lose the recording.
+CANON = {s["alert"].strip(): s["alert"] for s in SAMPLES}
+
+
+def option_label(cid: str) -> str:
+    s = BY_ID[cid]
+    miss = " (known miss: the harness expects a refusal)" if s.get("expects_refusal") and s["kind"] == "replay" else ""
+    return f"{cid}: {s['label']}; {OUTCOME.get(s['kind'], s['kind'])}{miss}"
 
 st.title("SOC Triage AI")
 if CACHED:
@@ -68,14 +78,15 @@ def visitor_ip() -> str:
         return ""
 
 
-def budget_line() -> None:
+def budget_line(slot) -> None:
+    """Writes into one sidebar slot, so the refresh after a run replaces the figure instead of adding one."""
     if MODE != "live":
         return
     try:
         b = httpx.get(f"{API_URL}/budget", timeout=3).json()
-        st.sidebar.metric("Demo tokens left today", f"{b['tokens_remaining']:,}", help=f"Cap {b['daily_token_cap']:,}, resets {b['resets_at']}")
+        slot.metric("Demo tokens left today", f"{b['tokens_remaining']:,}", help=f"Cap {b['daily_token_cap']:,}, resets {b['resets_at']}")
     except Exception:
-        st.sidebar.caption("Budget unavailable")
+        slot.caption("Budget unavailable")
 
 
 with st.sidebar:
@@ -84,15 +95,16 @@ with st.sidebar:
         if cid in BY_ID and st.button(label, use_container_width=True):
             st.session_state["alert"] = BY_ID[cid]["alert"]
     if SAMPLES:
-        with st.expander(f"All {len(SAMPLES)} harness alerts"):
-            pick = st.selectbox("Harness case", list(BY_ID), format_func=lambda i: f"{i}: {BY_ID[i]['label']}")
+        with st.expander(f"{len(SAMPLES)} recorded harness alerts" if CACHED else f"All {len(SAMPLES)} harness alerts"):
+            pick = st.selectbox("Harness case", list(BY_ID), format_func=option_label)
             if st.button("Load selected", use_container_width=True):
                 st.session_state["alert"] = BY_ID[pick]["alert"]
     else:
         st.caption("Samples unavailable. The backend may still be starting; reload in a minute.")
     if CACHED:
         st.caption("Recorded mode: no model calls, so there is no token budget.")
-    budget_line()
+    BUDGET = st.empty()
+    budget_line(BUDGET)
 
 alert = st.text_area("Alert", key="alert", height=140,
                      placeholder="Pick a recorded alert on the left." if CACHED else "Paste an alert, or pick a sample on the left.")
@@ -109,7 +121,8 @@ if alert.strip():
 if st.button("Run triage", type="primary", disabled=not alert.strip()):
     with st.spinner("Retrieving context and triaging..."):
         try:
-            r = httpx.post(f"{API_URL}/triage", json={"alert": alert}, timeout=90,
+            sent = CANON.get(alert.strip(), alert) if CACHED else alert
+            r = httpx.post(f"{API_URL}/triage", json={"alert": sent}, timeout=90,
                            headers={"X-Forwarded-For": visitor_ip()} if visitor_ip() else {})
         except httpx.HTTPError:
             st.error("The demo backend did not respond. Try again in a minute.")
@@ -128,6 +141,10 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             st.caption(f"Model step replayed from the harness recording of case `{replayed}` "
                        f"({c['version']['model']}{', recorded ' + when if when else ''}). "
                        "Extraction, retrieval and schema validation ran live on this request.")
+            if BY_ID.get(replayed, {}).get("expects_refusal") and not c["guardrail_triggered"]:
+                st.caption("Known guardrail miss, documented in model_card.md: the harness expects a refusal for "
+                           "this out-of-corpus alert, but its retrieval score cleared the threshold, so it reached "
+                           "the model.")
         if c["guardrail_triggered"]:
             st.warning("Guardrail triggered: the system refused to fabricate a triage. Manual analyst review required.")
             if not c["evidence"]["chunks_retrieved"]:
@@ -140,7 +157,9 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             for ch in c["evidence"]["chunks_retrieved"]:
                 st.markdown(f"`{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}")
                 st.caption(ch["text"][:400])
-        st.download_button("Download case JSON", r.text, file_name=f"{c['case_id']}.json", mime="application/json")
+        # the body has no replay field (the contract has none yet), so the file name carries the provenance
+        name = f"{c['case_id']}_replay-{replayed}.json" if replayed else f"{c['case_id']}.json"
+        st.download_button("Download case JSON", r.text, file_name=name, mime="application/json")
     else:
         body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
         if body.get("status") == "not_recorded":
@@ -153,4 +172,4 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
         if chunks:
             st.markdown("**Retrieval ran live on this alert:** " +
                         ", ".join(f"`{ch['source']}` {ch['score']}" for ch in chunks))
-    budget_line()
+    budget_line(BUDGET)

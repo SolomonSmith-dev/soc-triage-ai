@@ -86,6 +86,8 @@ def test_empty_list_on_nontrivial_severity_caps_confidence_informational_untouch
     Client(empty=True),                      # the empty reply seen in the live run (IndexError)
     Client(exc=RuntimeError("api down")),
     Client(reply=json.dumps({"severity": "high"})),   # schema failure
+    Client(reply=reply().replace('["a"]', '[{"action": "a", "priority": 1}]')),   # actions must be strings
+    Client(reply=reply().replace('["a"]', '["a", null]')),
 ])
 def test_failed_model_call_fails_toward_review_not_silence(client):
     r, hits, guard = run(client)
