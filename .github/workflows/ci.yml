@@ -33,7 +33,7 @@ jobs:
           pip install pytest
 
       - name: Run engine unit tests
-        run: pytest tests/unit -v
+        run: pytest tests/unit packages/contracts/tests -v
 
   api-tests:
     name: API unit tests (security / auth / services)
@@ -94,10 +94,10 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-all-MiniLM-L6-v2
 
-      - name: Install triage-engine + test deps
+      - name: Install triage-engine, demo + test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e services/triage-worker
+          pip install -e packages/contracts -e services/triage-worker -e apps/demo
           pip install pytest
 
       - name: Validate cases
@@ -107,6 +107,11 @@ jobs:
         env:
           HARNESS_REQUIRE_RETRIEVER: "1"
         run: pytest tests/harness/test_replay_ci.py -v -s
+
+      - name: Demo cached-mode gate (every cassette replays through the public demo API)
+        env:
+          HARNESS_REQUIRE_RETRIEVER: "1"
+        run: pytest tests/harness/test_demo_replay_ci.py -v -s
 
   retrieval-eval:
     name: Retrieval metrics (local embeddings, no API key)
@@ -149,7 +154,7 @@ jobs:
           path: retrieval_report.json
 
   demo-image:
-    name: Public demo image builds and serves (no API key)
+    name: Public demo image builds and serves, cached and live modes (no API key)
     runs-on: ubuntu-latest
 
     steps:
@@ -161,26 +166,61 @@ jobs:
       - name: Image size
         run: docker image ls soc-demo --format '{{.Size}}'
 
-      - name: Smoke test, cap of zero tokens
+      - name: Smoke test, cached mode (the default, no key)
         run: |
-          docker run -d --name demo -p 7860:7860 -e DEMO_DAILY_TOKEN_CAP=0 soc-demo
-          for i in $(seq 1 60); do curl -fs localhost:7860/healthz && break; sleep 2; done
-          curl -fs localhost:7860/healthz
-          curl -fs localhost:7860/budget
+          docker run -d --name demo -p 7860:7860 soc-demo
+          for i in $(seq 1 90); do curl -fs localhost:7860/healthz | grep -q '"replay"' && break; sleep 2; done
+          curl -fs localhost:7860/healthz; echo
+          curl -fs localhost:7860/budget; echo
           curl -fs -o /dev/null localhost:7860/
-          code=$(curl -s -o body.json -w '%{http_code}' -X POST localhost:7860/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins from 203.0.113.9"}')
+          python3 - <<'PY'
+          import glob, json, urllib.error, urllib.request
+          U = "http://localhost:7860"
+
+          def post(alert):
+              req = urllib.request.Request(U + "/triage", data=json.dumps({"alert": alert}).encode(),
+                                           headers={"content-type": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return r.status, r.headers, json.load(r)
+              except urllib.error.HTTPError as e:
+                  return e.code, e.headers, json.load(e)
+
+          health = json.load(urllib.request.urlopen(U + "/healthz"))
+          cassettes = len(glob.glob("tests/harness/cassettes/*.json"))
+          assert health["mode"] == "cached" and health["recordings"]["replay"] == cassettes, (health, cassettes)
+          samples = {s["id"]: s for s in json.load(urllib.request.urlopen(U + "/samples"))}
+          code, h, body = post(samples["T4_brute_force_ssh"]["alert"])
+          assert code == 200 and h.get("X-Demo-Replay-Case") == "T4_brute_force_ssh", (code, dict(h), body)
+          assert body["case_id"].startswith("SOC-") and body["guardrail_triggered"] is False, body
+          code, h, body = post(samples["OOC-004"]["alert"])
+          assert code == 200 and body["guardrail_triggered"] and not body["evidence"]["chunks_retrieved"], body
+          code, h, body = post("canary-9f3a 5000 failed ssh logins from 203.0.113.9 against srv-bastion-01 overnight")
+          assert code == 404 and body["status"] == "not_recorded", (code, body)
+          print("cached mode ok:", json.dumps(health["recordings"]))
+          PY
+          # neither the visitor's alert nor any recorded alert may appear in the container logs
+          if docker logs demo 2>&1 | grep -qE 'canary-9f3a|185\.220\.101\.45'; then echo "alert text leaked into logs"; exit 1; fi
+          docker rm -f demo
+
+      - name: Smoke test, live mode with a cap of zero tokens
+        run: |
+          docker run -d --name demo2 -p 7861:7860 -e DEMO_MODE=live -e DEMO_DAILY_TOKEN_CAP=0 soc-demo
+          for i in $(seq 1 60); do curl -fs localhost:7861/healthz && break; sleep 2; done
+          curl -fs localhost:7861/healthz | grep -q '"mode":"live"'
+          curl -fs localhost:7861/budget
+          code=$(curl -s -o body.json -w '%{http_code}' -X POST localhost:7861/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins from 203.0.113.9"}')
           cat body.json; echo
           test "$code" = "429"
           grep -q demo_budget_reached body.json
-          # the alert text must not appear anywhere in the container logs
-          if docker logs demo 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi
-          docker rm -f demo
-
-      - name: Smoke test, no key configured
-        run: |
-          docker run -d --name demo2 -p 7861:7860 soc-demo
-          for i in $(seq 1 60); do curl -fs localhost:7861/healthz && break; sleep 2; done
-          code=$(curl -s -o body2.json -w '%{http_code}' -X POST localhost:7861/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins"}')
-          cat body2.json; echo
-          test "$code" = "503"
           if docker logs demo2 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi
+          docker rm -f demo2
+
+      - name: Smoke test, live mode with no key configured
+        run: |
+          docker run -d --name demo3 -p 7862:7860 -e DEMO_MODE=live soc-demo
+          for i in $(seq 1 60); do curl -fs localhost:7862/healthz && break; sleep 2; done
+          code=$(curl -s -o body3.json -w '%{http_code}' -X POST localhost:7862/triage -H 'content-type: application/json' -d '{"alert":"canary-9f3a failed ssh logins"}')
+          cat body3.json; echo
+          test "$code" = "503"
+          if docker logs demo3 2>&1 | grep -q canary-9f3a; then echo "alert text leaked into logs"; exit 1; fi

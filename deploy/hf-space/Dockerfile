@@ -1,5 +1,6 @@
 # Hugging Face Space (Docker SDK). This file and README.md are the only files the Space repo needs.
 # The Space build fetches the app source from GitHub at REPO_REF, so there is one source of truth.
+# Default DEMO_MODE=cached replays the harness recordings: no API key, no model calls, no spend.
 ARG SOURCE=github
 ARG REPO_REF=main
 
@@ -28,6 +29,9 @@ COPY --from=source /src/packages/contracts packages/contracts
 COPY --from=source /src/services/triage-worker services/triage-worker
 COPY --from=source /src/apps/demo apps/demo
 COPY --from=source /src/deploy/hf-space deploy/hf-space
+# cached mode reads the recorded model responses and the harness cases from these paths
+COPY --from=source /src/tests/harness/cassettes tests/harness/cassettes
+COPY --from=source /src/tests/harness/cases tests/harness/cases
 
 # CPU-only torch keeps the image to roughly 2 GB instead of 5 GB.
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu \

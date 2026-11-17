@@ -2,46 +2,34 @@
 
 Result: `https://solomonsmith-dev-soc-triage-ai.hf.space` serves the Streamlit UI at `/` and `POST /triage` returning the case envelope from `packages/contracts`.
 
-Why this is a runbook and not done for you: deploying needs your Anthropic key as a Space secret and a Hugging Face write token. Neither belongs in an unattended session.
+The Space runs in cached mode by default. Stage 4, the model call, is answered from the cassettes the 100-case harness recorded, so the Space needs no Anthropic key, makes no model calls and costs nothing. Observable extraction, retrieval, the refusal guardrail, schema validation and case packaging run live on every request. An alert that reaches stage 4 with no matching recording gets `404 not_recorded`. Live mode calls Claude with your key and is opt in (step 6).
 
-How it works: the Space repo holds two files (`Dockerfile`, `README.md`). The Dockerfile downloads this repo at a pinned commit, installs CPU-only torch, bakes the embedding model into the image, and starts uvicorn, Streamlit and nginx behind port 7860. CI builds the same Dockerfile from the checkout and smoke-tests it (job `demo-image`).
+How it works: the Space repo holds two files (`Dockerfile`, `README.md`). The Dockerfile downloads this repo at a pinned commit, installs CPU-only torch, bakes the embedding model into the image, copies the harness cassettes and cases, and starts uvicorn, Streamlit and nginx behind port 7860. At startup the API runs every harness case through the engine and checks which recordings reproduce on that machine. `GET /samples` lists only those, and `/healthz` reports the counts. CI builds the same Dockerfile from the checkout and smoke-tests both modes (job `demo-image`).
+
+Deploying needs a Hugging Face write token. It does not belong in any file in a repo.
 
 Use `/usr/bin/grep`, `/bin/ls`, `/bin/cp -f` as written. Work under `~/Projects`, not Desktop or Downloads.
 
-## 0. Merge the PRs in order
+## 0. Check main
 
-1. Merge the scope PR, then the harness PR, then the deploy PR into `main` (each one is stacked on the previous).
-2. Done check, must print a 40-character hash and the file must exist:
+1. The commit you deploy must be on `main` and include cached mode. Done check, the first line must print a 40-character hash and the `ls-tree` line must print two entries:
    ```bash
    git -C ~/Projects/soc-triage-ai fetch origin && git -C ~/Projects/soc-triage-ai rev-parse origin/main
-   git -C ~/Projects/soc-triage-ai ls-tree origin/main deploy/hf-space/Dockerfile
+   git -C ~/Projects/soc-triage-ai ls-tree origin/main deploy/hf-space/Dockerfile apps/demo/soc_demo/replay.py
    ```
-   The `ls-tree` line must print one entry. If it prints nothing, the deploy PR is not merged yet.
+2. CI must be green on that commit, in particular `demo-image` and `harness-replay`.
 3. The repo must be public, because the Space build downloads it anonymously. Done check (prints `200`):
    ```bash
    curl -s -o /dev/null -w '%{http_code}\n' https://codeload.github.com/SolomonSmith-dev/soc-triage-ai/tar.gz/main
    ```
 
-## 1. Create a dedicated, capped Anthropic key
-
-1. console.anthropic.com, Settings, API keys, Create key, name it `soc-triage-demo`.
-2. Settings, Limits: set a monthly spend limit (suggest 5 USD). This is the backstop behind the app's own daily token cap.
-3. Copy the key once. Do not paste it into any file in a repo.
-4. Done check: the key is listed as `soc-triage-demo` and the limit shows on the Limits page.
-
-## 2. Create the Space
+## 1. Create the Space
 
 1. huggingface.co/new-space. Owner `SolomonSmith-dev`, name `soc-triage-ai`, SDK **Docker**, template **Blank**, hardware **CPU basic (free)**, visibility **Public**. Create.
-2. Done check: `https://huggingface.co/spaces/SolomonSmith-dev/soc-triage-ai` loads and shows an empty Space.
+2. No secret is needed in cached mode. Optional variables, shown with their defaults: `DEMO_RATE_PER_MINUTE=5`, `DEMO_RATE_PER_DAY=20`, `DEMO_MAX_ALERT_CHARS=3000`.
+3. Done check: `https://huggingface.co/spaces/SolomonSmith-dev/soc-triage-ai` loads and shows an empty Space.
 
-## 3. Add the secret and limits
-
-1. Space, Settings, Variables and secrets.
-2. New secret: name `ANTHROPIC_API_KEY`, value the key from step 1.
-3. New variables (optional, these are the defaults): `DEMO_DAILY_TOKEN_CAP=200000`, `DEMO_RATE_PER_MINUTE=5`, `DEMO_RATE_PER_DAY=20`, `DEMO_MAX_ALERT_CHARS=3000`.
-4. Done check: `ANTHROPIC_API_KEY` is listed under Secrets with its value hidden.
-
-## 4. Push the two files
+## 2. Push the two files
 
 ```bash
 cd ~/Projects
@@ -65,52 +53,86 @@ git commit -m "Deploy SOC Triage AI demo"
 git push
 ```
 
-## 5. Wait for the build
+## 3. Wait for the build
 
 1. Space page, the status badge reads **Building**, then **Running**. Expect 8 to 15 minutes the first time (torch and the model download).
 2. Done check: badge says **Running** and the app loads at the Space URL. If it says **Build error**, open the Logs tab, Build, and read the last 30 lines.
 
-## 6. Verify the endpoint
+## 4. Verify the endpoints
 
 ```bash
 U=https://solomonsmith-dev-soc-triage-ai.hf.space
-curl -s $U/healthz
-curl -s $U/budget
-curl -s -X POST $U/triage -H 'content-type: application/json' \
-  -d '{"alert":"5000 failed SSH authentication attempts in 10 minutes against srv-bastion-01 from 185.220.101.45. No successful logins."}' \
-  | python3 -m json.tool | /usr/bin/grep -E '"case_id"|"severity"|"guardrail_triggered"'
+curl -s $U/healthz; echo
+curl -s -o /dev/null -w '%{http_code}\n' $U/
 ```
 
-Done check, all must hold:
-- `healthz` prints `{"status":"ok","demo_mode":true}`.
-- `budget` prints a JSON object with `tokens_remaining` close to 200000.
-- The triage call prints a `case_id` starting `SOC-`, a `severity`, and `"guardrail_triggered": false`. A `503` with `not_configured` means the secret is missing or misnamed (step 3).
+Done check:
+- `healthz` prints `{"status":"ok","demo_mode":true,"mode":"cached","recordings":{"replay":92,"refusal":7,"unservable":1}}`. While the engine loads it prints `"recordings":"loading"`; wait a minute. `replay` must equal the number of files in `tests/harness/cassettes`. The one `unservable` case is INJ-009, which has no cassette (see the model card).
+- `/` prints `200`.
 
-## 7. Verify the guards
+A recorded alert replays the model step. Fetch it from `/samples` so the text matches byte for byte:
 
-1. Refusal when the cap is hit: Space, Settings, set `DEMO_DAILY_TOKEN_CAP=0`, wait for **Running**, then:
-   ```bash
-   curl -s -i -X POST $U/triage -H 'content-type: application/json' -d '{"alert":"test alert text"}' | /usr/bin/grep -E 'HTTP|demo_budget_reached'
-   ```
-   Done check: status line `429` and the body contains `demo_budget_reached`. Then set the variable back to `200000`.
-2. Per-IP limit: run the triage call from step 6 six times in a row. Done check: the sixth prints `rate_limited`.
-3. No alert text in logs: POST an alert containing the word `zebracanary`, then open Space, Logs, Container, and use the browser's find for `zebracanary`. Done check: 0 matches.
+```bash
+curl -s $U/samples | python3 -c 'import json,sys; s={x["id"]:x for x in json.load(sys.stdin)}; json.dump({"alert": s["T4_brute_force_ssh"]["alert"]}, open("t4.json","w"))'
+curl -s -D - -o t4-out.json -X POST $U/triage -H 'content-type: application/json' --data @t4.json | /usr/bin/grep -iE '^HTTP|^x-demo'
+python3 -c 'import json; c=json.load(open("t4-out.json")); print(c["case_id"], c["triage"]["severity"], c["guardrail_triggered"])'
+```
 
-## 8. Wire the link and record the numbers
+Done check: status `200`, `x-demo-mode: cached`, `x-demo-replay-case: T4_brute_force_ssh`, and a line like `SOC-20261117-1a2b high False`.
 
-1. In `README.md` replace `DEMO_URL_PLACEHOLDER` with the Space URL. Check: `/usr/bin/grep -c DEMO_URL_PLACEHOLDER README.md` prints `0`.
-2. Record the live harness run locally (uses your key, about 100 calls, capped at 5 USD by the CLI):
-   ```bash
-   cd ~/Projects/soc-triage-ai
-   export ANTHROPIC_API_KEY=...   # from your shell only, never a file
-   python -m tests.harness.test_harness --record --update-baseline
-   python -m tests.harness.report
-   ```
-   Done check: the run ends with `wrote .../baseline.json` and prints a live spend line under 5 USD; `tests/harness/RESULTS.md` now has a "Live run" table.
+An out-of-corpus alert is refused at stage 3, before any model call:
+
+```bash
+curl -s -X POST $U/triage -H 'content-type: application/json' \
+  -d '{"alert":"Sear the short ribs for 4 minutes per side, then deglaze with red wine and braise at 300F for three hours."}' \
+  | python3 -c 'import json,sys; c=json.load(sys.stdin); print(c["guardrail_triggered"], c["uncertainty_mode"], len(c["evidence"]["chunks_retrieved"]))'
+```
+
+Done check: `True out_of_scope 0`.
+
+An in-corpus alert with no recording is not answered:
+
+```bash
+curl -s -X POST $U/triage -H 'content-type: application/json' \
+  -d '{"alert":"40 failed SSH logins against srv-bastion-07, then one success and a new sudoers entry"}'
+```
+
+Done check: the body has `"status":"not_recorded"` and a `retrieval` list of the chunks that matched.
+
+## 5. Verify the guards
+
+1. Per-IP limit: run the triage call from step 4 six times within a minute. Done check: the sixth prints `rate_limited`.
+2. No alert text in logs: POST an alert containing the word `zebracanary`, then open Space, Logs, Container, and use the browser's find for `zebracanary`. Done check: 0 matches.
+
+## 6. Live mode (optional, costs money)
+
+Only if visitors should be able to triage any alert. The Space then calls Claude for every request that passes the guards.
+
+1. console.anthropic.com, Settings, API keys, Create key, name it `soc-triage-demo`. Settings, Limits: set a monthly spend limit (suggest 5 USD). This is the backstop behind the app's own daily token cap. Copy the key once and do not paste it into any file in a repo.
+2. Space, Settings, Variables and secrets. New secret `ANTHROPIC_API_KEY` with the key. New variable `DEMO_MODE=live`. Optional variables with their defaults: `DEMO_DAILY_TOKEN_CAP=200000`, `DEMO_RATE_PER_MINUTE=5`, `DEMO_RATE_PER_DAY=20`.
+3. Done check: `healthz` prints `"mode":"live"` and `budget` prints `tokens_remaining` close to 200000. A `503` with `not_configured` means the secret is missing or misnamed.
+4. Cap check: set `DEMO_DAILY_TOKEN_CAP=0`, wait for **Running**, POST any alert. Done check: status `429` and `demo_budget_reached` in the body. Then set it back.
+
+To return to cached mode, delete the `DEMO_MODE` variable and the secret.
+
+## 7. Record a fresh harness run (optional, about 0.60 USD)
+
+Needed after any change to the prompt, corpus or retrieval, because those change the prompt hash and every cassette goes stale. Uses your key, about 100 calls, capped at 5 USD by the CLI:
+
+```bash
+cd ~/Projects/soc-triage-ai
+export ANTHROPIC_API_KEY=...   # from your shell only, never a file
+python -m tests.harness.test_harness --record --update-baseline
+python -m tests.harness.report
+```
+
+Done check: the run ends with `wrote .../baseline.json` and prints a live spend line under 5 USD. Commit the cassettes, merge, and redeploy so the Space replays the new recordings.
 
 ## Operating notes
 
-- Free Spaces sleep after about 48 hours without traffic. The first visit wakes the container in roughly a minute.
-- The daily token counter is a file in `/tmp`. It survives process restarts but not a container rebuild, so a rebuild refills the day's cap. The Anthropic monthly limit from step 1 is the hard stop.
-- Cap overshoot: the check runs before the model call and usage is added after it, so simultaneous requests can exceed the cap by a few requests' worth of tokens.
+- Redeploy: set `ARG REPO_REF` in the Space's Dockerfile to the new `main` hash and push. The Space rebuilds from that commit.
+- Free Spaces sleep after about 48 hours without traffic. The first visit wakes the container in roughly a minute, then the startup recording check takes a few seconds more.
+- Cached mode matches recordings on the exact prompt, which includes the exact alert text. An edited alert still gets live extraction, retrieval and the refusal guardrail; if retrieval finds context, the answer is `404 not_recorded` instead of a triage.
+- If cassettes go stale, CI fails on `harness-replay`, and a Space built from that commit shows `replay` below the cassette count in `/healthz`.
+- Live mode only: the daily token counter is a file in `/tmp`. It survives process restarts but not a container rebuild, so a rebuild refills the day's cap. The Anthropic monthly limit is the hard stop. The cap check runs before the model call and usage is added after it, so simultaneous requests can exceed the cap by a few requests' worth of tokens.
 - Behind the Space proxy the client address is the right-most `X-Forwarded-For` entry (`DEMO_TRUSTED_PROXY_HOPS=1`). If you move hosts, set that to the number of proxies in front of the app, or per-IP limiting will key on the wrong address.

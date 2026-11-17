@@ -3,9 +3,18 @@
 Wraps existing triage output, observables, and retrieval metadata into a
 complete case package. Pure deterministic logic; no LLM calls.
 """
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Tuple
+
+logger = logging.getLogger(__name__)
+
+# TriageResult in packages/contracts, which forbids extra keys. The model sometimes adds keys of its
+# own (for example "mitre_attack_mapping"); the envelope carries only these. A unit test pins the two.
+TRIAGE_FIELDS = (
+    "severity", "confidence", "mitre_techniques", "summary", "recommended_actions", "escalate", "reasoning",
+)
 
 VERSION_META = {
     "model": "claude-sonnet-4-5",
@@ -73,13 +82,16 @@ def build_case_package(
         triage_result, avg_score, guardrail_triggered
     )
 
+    extra = set(triage_result) - set(TRIAGE_FIELDS) - {"sources", "retrieval_score"}
+    if extra:
+        logger.info("dropped %d model keys outside the TriageResult contract", len(extra))
+
     return {
         "case_id": _new_case_id(),
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "alert_raw": alert_raw,
         "observables": observables,
-        "triage": {k: v for k, v in triage_result.items()
-                   if k not in ("sources", "retrieval_score")},
+        "triage": {k: triage_result[k] for k in TRIAGE_FIELDS if k in triage_result},
         "evidence": {
             "chunks_retrieved": chunks,
             "avg_retrieval_score": round(avg_score, 3),

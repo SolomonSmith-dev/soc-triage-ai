@@ -16,6 +16,7 @@ def test_case_envelope_round_trip_from_v1_builder():
         "reasoning": "because",
         "sources": ["insider_threat.md"],
         "retrieval_score": 0.5,
+        "mitre_attack_mapping": "a key the model added; the builder must drop it",
     }
     hits = [
         ({"id": "ins_1", "source": "insider_threat.md", "text": "x"}, 0.6),

@@ -1,4 +1,7 @@
-"""Demo mode: refuses when the cap is hit, rate limits per IP, never logs alert bodies."""
+"""Demo live mode: refuses when the cap is hit, rate limits per IP, never logs alert bodies.
+
+Cached mode, the default, is covered in test_demo_replay.py.
+"""
 import json
 import logging
 from types import SimpleNamespace
@@ -35,7 +38,7 @@ class FakeRetriever:
 
 def make(tmp_path, hits=True, tokens=(1000, 200), **cfg):
     inner = FakeInner(tokens)
-    config = DemoConfig(state_path=str(tmp_path / "b.json"), **cfg)
+    config = DemoConfig(mode="live", state_path=str(tmp_path / "b.json"), **cfg)
 
     def factory(budget):
         m = MeteredClient(inner, budget)
@@ -104,7 +107,7 @@ def test_oversize_alert_rejected_before_any_work(tmp_path):
 
 
 def test_no_key_configured_is_a_clear_503(tmp_path):
-    cfg = DemoConfig(state_path=str(tmp_path / "b.json"))
+    cfg = DemoConfig(mode="live", state_path=str(tmp_path / "b.json"))
     c = TestClient(create_app(cfg, lambda budget: (None, None)))
     r = c.post("/triage", json={"alert": "x y"})
     assert r.status_code == 503 and r.json()["status"] == "not_configured"

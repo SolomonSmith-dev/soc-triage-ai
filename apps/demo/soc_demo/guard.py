@@ -19,8 +19,13 @@ from pathlib import Path
 logger = logging.getLogger("soc_demo")
 
 
+MODES = ("cached", "live")
+
+
 @dataclass
 class DemoConfig:
+    # cached: replay the harness recordings, no key, no spend. live: call Claude, metered.
+    mode: str = "cached"
     daily_token_cap: int = 200_000
     per_ip_per_minute: int = 5
     per_ip_per_day: int = 20
@@ -28,11 +33,19 @@ class DemoConfig:
     trusted_proxy_hops: int = 1
     state_path: str = "/tmp/soc-demo-budget.json"
     ip_salt: str = field(default="soc-demo")
+    # relative to the working directory: the repo root locally, /home/user/app in the Space image
+    cassette_dir: str = "tests/harness/cassettes"
+    cases_dir: str = "tests/harness/cases"
+
+    def __post_init__(self) -> None:
+        if self.mode not in MODES:
+            raise ValueError(f"DEMO_MODE must be one of {MODES}, got {self.mode!r}")
 
     @classmethod
     def from_env(cls) -> "DemoConfig":
         e = os.environ.get
         return cls(
+            mode=e("DEMO_MODE", cls.mode).strip().lower(),
             daily_token_cap=int(e("DEMO_DAILY_TOKEN_CAP", cls.daily_token_cap)),
             per_ip_per_minute=int(e("DEMO_RATE_PER_MINUTE", cls.per_ip_per_minute)),
             per_ip_per_day=int(e("DEMO_RATE_PER_DAY", cls.per_ip_per_day)),
@@ -40,6 +53,8 @@ class DemoConfig:
             trusted_proxy_hops=int(e("DEMO_TRUSTED_PROXY_HOPS", cls.trusted_proxy_hops)),
             state_path=e("DEMO_STATE_PATH", cls.state_path),
             ip_salt=e("DEMO_IP_SALT", cls.ip_salt),
+            cassette_dir=e("DEMO_CASSETTE_DIR", cls.cassette_dir),
+            cases_dir=e("DEMO_CASES_DIR", cls.cases_dir),
         )
 
 
