@@ -4,6 +4,7 @@ Uses sentence-transformers all-MiniLM-L6-v2 for embeddings and numpy
 cosine similarity for ranking. No vector DB needed at this corpus size.
 """
 import logging
+import os
 from typing import List, Dict, Tuple, Optional
 
 import numpy as np
@@ -20,9 +21,11 @@ class ThreatIntelRetriever:
     min_score threshold, sorted by similarity descending.
     """
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2", device: Optional[str] = None):
         self.model_name = model_name
-        self.model = SentenceTransformer(model_name)
+        # None keeps sentence-transformers' own choice. SOC_EMBED_DEVICE=cpu pins it where CUDA is only
+        # emulated (the ZeroGPU Space), so encoding runs where the cassettes were checked: on the CPU.
+        self.model = SentenceTransformer(model_name, device=device or os.environ.get("SOC_EMBED_DEVICE") or None)
         self.chunks: List[Dict] = []
         self.embeddings: Optional[np.ndarray] = None
 

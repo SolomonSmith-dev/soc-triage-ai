@@ -52,6 +52,79 @@ def _where(exc: BaseException) -> str:
     return f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "-"
 
 
+API_PATHS = frozenset({"/triage", "/samples", "/healthz", "/budget"})
+# Every valid request is far smaller (an alert is at most 3000 characters). Generous, so the Space's page can still
+# tell a visitor who pastes a long log what the limit is. The Docker image's nginx caps bodies at 64k as well.
+MAX_BODY_BYTES = 256 * 1024
+
+
+class BodyLimit:
+    """Refuses request bodies over `limit` bytes before anything reads them: a declared length over the limit gets
+    a 413, and a body sent without one ends as a client disconnect once it passes the limit. Plain ASGI."""
+
+    def __init__(self, app, limit: int = MAX_BODY_BYTES):
+        self.app, self.limit = app, limit
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = dict(scope["headers"]).get(b"content-length", b"0")
+        if not declared.isdigit() or int(declared) > self.limit:
+            logger.info("event=body_too_large status=413")
+            await JSONResponse({"status": "body_too_large", "message": "Request body too large."},
+                               status_code=413)(scope, receive, send)
+            return
+        seen = 0
+
+        async def counted():
+            nonlocal seen
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.limit:
+                    return {"type": "http.disconnect"}
+            return message
+
+        await self.app(scope, counted, send)
+
+
+class ContainErrors:
+    """Last resort for every HTTP route, a UI mounted on the same app included (the Space's Gradio page). A
+    traceback can carry alert or model text, so an unexpected error is logged by type and location only, and the
+    client gets a fixed 500 if no response has started. Plain ASGI, so streaming responses pass through."""
+
+    def __init__(self, app, mode: str):
+        self.app, self.mode = app, mode
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        started = streaming = finished = False
+
+        async def tracked(message):
+            nonlocal started, streaming, finished
+            if message["type"] == "http.response.start":
+                started = True
+                streaming = not any(k.lower() == b"content-length" for k, _ in message.get("headers", []))
+            elif message["type"] == "http.response.body" and not message.get("more_body", False):
+                finished = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracked)
+        except Exception as exc:
+            route = getattr(scope.get("route"), "path", None) or ("page" if scope["path"] not in API_PATHS else "-")
+            logger.error("event=unhandled_error status=%s route=%s error=%s at=%s", "aborted" if started else 500,
+                         route, type(exc).__name__, _where(exc))
+            if not started:
+                await JSONResponse({"status": "error", "message": "Internal error. The demo logs only the error type."},
+                                   status_code=500, headers={"X-Demo-Mode": self.mode})(scope, receive, send)
+            elif streaming and not finished:  # end the stream (an SSE feed for a stale page), so it closes cleanly
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+
 def _sample(c: HarnessCase, kind: str) -> dict:
     return {"id": c.case_id, "category": c.category, "group": c.group, "label": c.label,
             "expects_refusal": c.expects_refusal, "kind": kind, "alert": c.alert}
@@ -69,7 +142,8 @@ def _real_engine(budget: DailyBudget):
         return None, None
     from anthropic import Anthropic
     from triage_engine.triage import SOCTriage
-    metered = MeteredClient(Anthropic(api_key=key), budget)
+    # bounded: a page Run waits at most 120 s, and the SDK default (600 s, 2 retries) would hold a worker far longer
+    metered = MeteredClient(Anthropic(api_key=key, timeout=60, max_retries=1), budget)
     return SOCTriage(client=metered), metered
 
 
@@ -138,16 +212,8 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
         return JSONResponse({"status": status, "message": message, **extra}, status_code=status_code,
                             headers={"X-Demo-Mode": cfg.mode, **(headers or {})})
 
-    @app.middleware("http")
-    async def contain_errors(request: Request, call_next):
-        """Last resort. A traceback can carry alert or model text, so an unexpected error is logged by type and
-        location only, and the client gets a fixed 500."""
-        try:
-            return await call_next(request)
-        except Exception as exc:
-            logger.error("event=unhandled_error status=500 route=%s error=%s at=%s",
-                         getattr(request.scope.get("route"), "path", "-"), type(exc).__name__, _where(exc))
-            return refuse(500, "error", "Internal error. The demo logs only the error type.")
+    app.add_middleware(ContainErrors, mode=cfg.mode)
+    app.add_middleware(BodyLimit)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_request: Request, _exc: RequestValidationError):
