@@ -12,10 +12,10 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 
 ## Evidence
 
-- **129 pytest tests** across three CI jobs: 108 in `tests/unit`, 3 in `packages/contracts/tests`, 6 in `tests/harness` (the replay gate and the demo's cached-mode gate), 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 111 in `tests/unit` and `packages/contracts/tests` run offline with no key.
+- **154 pytest tests** across three CI jobs: 133 in `tests/unit`, 3 in `packages/contracts/tests`, 6 in `tests/harness` (the replay gate and the demo's cached-mode gate), 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 136 in `tests/unit` and `packages/contracts/tests` run offline with no key.
 - **100 harness cases**, 60 standard and 40 adversarial, 7 reviewed by me and 93 drafted by Claude and pending review (`python -m tests.harness.loader --validate`).
 - **Live run 2026-10-09**, `claude-sonnet-4-5`, 76 of 100 passing, 0.59 USD spent (`tests/harness/harness_results.json`, `meta` and `results`).
-- **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): engine unit tests, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now, and checks that every cassette replays through the public demo API), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo in cached and live modes that asserts alert text never reaches the logs.
+- **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): unit tests for the engine, the demo API and the Streamlit page, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now, and checks that every cassette replays through the public demo API), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo in cached and live modes that fails if posted alert text, an unredacted engine message or an unhandled error reaches the container logs.
 - The table and badges are generated from the committed JSON by `python -m tests.harness.readme_results`; `tests/unit/test_readme.py` fails CI if they drift.
 
 <!-- RESULTS:BEGIN -->
@@ -39,7 +39,7 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 
 Full tables, the threshold sweep and every documented failure case are in [`model_card.md`](model_card.md) and [`tests/harness/RESULTS.md`](tests/harness/RESULTS.md). Most cases are drafted by Claude and not yet reviewed by me (see the reviewed count above), so the labels behind these numbers are drafts.
 
-**Live demo:** [solomonsmith-dev-soc-triage-ai.hf.space](https://solomonsmith-dev-soc-triage-ai.hf.space), in recorded mode. The model step replays the responses Claude gave in the harness run, so the Space makes no model calls and costs nothing; extraction, retrieval, the refusal guardrail and schema validation run live on every request. Pick one of the recorded alerts; an edited alert still gets retrieval and the guardrail but no model response. Runbook: [`docs/deploy-hf.md`](docs/deploy-hf.md).
+**Public demo:** the Hugging Face Space is not deployed yet. It will run in recorded mode: the model step replays the responses Claude gave in the harness run, so the Space makes no model calls and costs nothing, while extraction, retrieval, the refusal guardrail and schema validation run live on every request. Runbook: [`docs/deploy-hf.md`](docs/deploy-hf.md).
 
 **Walkthrough:** [Loom, 3 minutes](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9), the Streamlit UI triaging a ransomware alert end to end.
 
@@ -58,7 +58,7 @@ pip install -r requirements.txt            # streamlit for the dev console
 No API key needed (the first retrieval call downloads the `all-MiniLM-L6-v2` embedding model):
 
 ```bash
-pytest tests/unit packages/contracts/tests          # 111 offline tests
+pytest tests/unit packages/contracts/tests          # 136 offline tests
 python -m tests.harness.loader --validate            # case files and review status
 python -m tests.harness.retrieval_eval               # retrieval metrics, local embeddings
 python -m tests.harness.test_harness --replay        # replay recorded model replies

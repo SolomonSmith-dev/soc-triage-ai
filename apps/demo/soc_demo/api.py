@@ -12,18 +12,20 @@ import logging
 import os
 import threading
 import time
+import traceback
 from collections import Counter
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from soc_contracts import CaseEnvelope
 from soc_demo.guard import (
     DailyBudget, DemoConfig, IPRateLimiter, MeteredClient, client_ip, install_redaction, ip_tag,
 )
-from soc_demo.replay import CachedClient, check_recordings, load_cases, load_recordings
+from soc_demo.replay import CachedClient, HarnessCase, check_recordings, load_cases, load_recordings
 
 logger = logging.getLogger("soc_demo")
 
@@ -37,6 +39,22 @@ NOT_RECORDED_MESSAGE = (
     "this exact text. Send one of the alerts from GET /samples unchanged, or run the project with your own "
     "key: see the README."
 )
+INVALID_REQUEST_MESSAGE = 'Send a JSON body {"alert": "<text>"} with non-empty alert text.'
+ENGINE_UNAVAILABLE_MESSAGE = "The demo backend failed to load. It retries every minute; try again shortly."
+INVALID_ENVELOPE_MESSAGE = ("The pipeline produced a case that fails the case contract, so it was not returned. "
+                            "Manual analyst review required.")
+LOAD_RETRY_SECONDS = 60
+
+
+def _where(exc: BaseException) -> str:
+    """file:line of the innermost frame. Exception text can carry alert or model output, so logs get this."""
+    tb = traceback.extract_tb(exc.__traceback__)
+    return f"{os.path.basename(tb[-1].filename)}:{tb[-1].lineno}" if tb else "-"
+
+
+def _sample(c: HarnessCase, kind: str) -> dict:
+    return {"id": c.case_id, "category": c.category, "group": c.group, "label": c.label,
+            "expects_refusal": c.expects_refusal, "kind": kind, "alert": c.alert}
 
 
 class TriageRequest(BaseModel):
@@ -75,22 +93,34 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
     budget = DailyBudget(cfg.daily_token_cap, cfg.state_path, clock)
     limiter = IPRateLimiter(cfg.per_ip_per_minute, cfg.per_ip_per_day, clock)
     factory = engine_factory or (_real_engine if live else (lambda _budget: _cached_engine(cfg)))
-    state: dict = {"engine": None, "client": None, "loaded": False, "kinds": {}}
+    state: dict = {"engine": None, "client": None, "loaded": False, "kinds": {}, "failed_at": None}
+    live_samples: list[dict] = []
 
     lock = threading.Lock()
 
-    def ensure_engine():
+    def ensure_engine() -> bool:
+        """Load once. False while a failed load waits out its retry delay, so requests do not each re-run it."""
         with lock:
             if state["loaded"]:
-                return
-            engine, client = factory(budget)
-            if engine is not None and isinstance(client, CachedClient):
-                # verify on this machine which recordings reproduce, so /samples only offers working ones
-                state["kinds"] = check_recordings(engine, client)
-                c = Counter(state["kinds"].values())
-                logger.info("event=recordings_checked replay=%d refusal=%d unservable=%d",
-                            c["replay"], c["refusal"], c["unservable"])
-            state["engine"], state["client"], state["loaded"] = engine, client, True
+                return True
+            if state["failed_at"] is not None and clock() - state["failed_at"] < LOAD_RETRY_SECONDS:
+                return False
+            try:
+                engine, client = factory(budget)
+                kinds = {}
+                if engine is not None and isinstance(client, CachedClient):
+                    # verify on this machine which recordings reproduce, so /samples only offers working ones
+                    kinds = check_recordings(engine, client)
+                    c = Counter(kinds.values())
+                    logger.info("event=recordings_checked replay=%d refusal=%d unservable=%d",
+                                c["replay"], c["refusal"], c["unservable"])
+            except Exception as exc:
+                state["failed_at"] = clock()
+                logger.error("event=engine_load_failed error=%s at=%s retry_in=%ds",
+                             type(exc).__name__, _where(exc), LOAD_RETRY_SECONDS)
+                return False
+            state.update(engine=engine, client=client, kinds=kinds, loaded=True, failed_at=None)
+            return True
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -108,14 +138,33 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
         return JSONResponse({"status": status, "message": message, **extra}, status_code=status_code,
                             headers={"X-Demo-Mode": cfg.mode, **(headers or {})})
 
+    @app.middleware("http")
+    async def contain_errors(request: Request, call_next):
+        """Last resort. A traceback can carry alert or model text, so an unexpected error is logged by type and
+        location only, and the client gets a fixed 500."""
+        try:
+            return await call_next(request)
+        except Exception as exc:
+            logger.error("event=unhandled_error status=500 route=%s error=%s at=%s",
+                         getattr(request.scope.get("route"), "path", "-"), type(exc).__name__, _where(exc))
+            return refuse(500, "error", "Internal error. The demo logs only the error type.")
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_request: Request, _exc: RequestValidationError):
+        # FastAPI's default echoes the input back, and turns into a 500 that logs it when the input cannot be
+        # encoded (a lone surrogate, NaN). Answer with a fixed body and log the event only.
+        log_event("invalid_request", 422)
+        return refuse(422, "invalid_request", INVALID_REQUEST_MESSAGE)
+
     @app.get("/healthz")
     def healthz():
-        body = {"status": "ok", "demo_mode": True, "mode": cfg.mode}
+        failed = state["failed_at"] is not None
+        body = {"status": "error" if failed else "ok", "demo_mode": True, "mode": cfg.mode}
         if not live:
             c = Counter(state["kinds"].values())
             body["recordings"] = ({k: c[k] for k in ("replay", "refusal", "unservable")}
-                                  if state["loaded"] else "loading")
-        return body
+                                  if state["loaded"] else "failed" if failed else "loading")
+        return JSONResponse(body, status_code=503) if failed else body
 
     @app.get("/budget")
     def get_budget():
@@ -129,15 +178,16 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
     async def samples():
         """Harness alerts to try. In cached mode, only those this machine verified to replay or refuse."""
         if live:
-            return [{"id": c.case_id, "category": c.category, "group": c.group, "label": c.label,
-                     "kind": "live", "alert": c.alert} for c in load_cases(cfg.cases_dir)]
-        await asyncio.to_thread(ensure_engine)
+            if not live_samples:  # parsed once, off the event loop
+                cases = await asyncio.to_thread(load_cases, cfg.cases_dir)
+                live_samples[:] = [_sample(c, "live") for c in cases]
+            return live_samples
+        if not await asyncio.to_thread(ensure_engine):
+            return refuse(503, "engine_unavailable", ENGINE_UNAVAILABLE_MESSAGE)
         client, kinds = state["client"], state["kinds"]
         if not isinstance(client, CachedClient):
             return []
-        return [{"id": c.case_id, "category": c.category, "group": c.group, "label": c.label,
-                 "kind": kinds[c.case_id], "alert": c.alert}
-                for c in client.cases if kinds.get(c.case_id) in ("replay", "refusal")]
+        return [_sample(c, kinds[c.case_id]) for c in client.cases if kinds.get(c.case_id) in ("replay", "refusal")]
 
     @app.post("/triage", response_model=CaseEnvelope)
     async def triage(body: TriageRequest, request: Request, response: Response):
@@ -160,7 +210,9 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
             return refuse(429, "rate_limited", f"Too many requests from your address. Try again in {retry} seconds.",
                           headers={"Retry-After": str(retry)}, retry_after_seconds=retry)
 
-        await asyncio.to_thread(ensure_engine)
+        if not await asyncio.to_thread(ensure_engine):
+            log_event("engine_unavailable", 503, alert_chars=n, client=tag)
+            return refuse(503, "engine_unavailable", ENGINE_UNAVAILABLE_MESSAGE)
         engine, client = state["engine"], state["client"]
         if engine is None:
             log_event("not_configured", 503, alert_chars=n, client=tag)
@@ -194,6 +246,11 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
                 "avg_score": round(sum(s for _, s in hits) / len(hits), 3) if hits else 0.0,
                 "chunks": [{"source": ch["source"], "score": round(s, 3)} for ch, s in hits],
             })
+        try:
+            CaseEnvelope.model_validate(pkg)
+        except ValidationError as exc:  # stage 5 should make this unreachable; never return or log the content
+            log_event("invalid_envelope", 500, alert_chars=n, errors=exc.error_count(), client=tag)
+            return refuse(500, "invalid_envelope", INVALID_ENVELOPE_MESSAGE)
         response.headers["X-Demo-Mode"] = cfg.mode
         if rec is not None:
             response.headers["X-Demo-Replay-Case"] = rec.case_id

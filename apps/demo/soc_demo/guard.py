@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 import os
+import secrets
 import threading
 import time
 from collections import deque
@@ -32,7 +33,8 @@ class DemoConfig:
     max_alert_chars: int = 3000
     trusted_proxy_hops: int = 1
     state_path: str = "/tmp/soc-demo-budget.json"
-    ip_salt: str = field(default="soc-demo")
+    # random per process unless DEMO_IP_SALT is set: a public default would make the 40-bit tags reversible
+    ip_salt: str = field(default_factory=lambda: secrets.token_hex(16))
     # relative to the working directory: the repo root locally, /home/user/app in the Space image
     cassette_dir: str = "tests/harness/cassettes"
     cases_dir: str = "tests/harness/cases"
@@ -52,7 +54,7 @@ class DemoConfig:
             max_alert_chars=int(e("DEMO_MAX_ALERT_CHARS", cls.max_alert_chars)),
             trusted_proxy_hops=int(e("DEMO_TRUSTED_PROXY_HOPS", cls.trusted_proxy_hops)),
             state_path=e("DEMO_STATE_PATH", cls.state_path),
-            ip_salt=e("DEMO_IP_SALT", cls.ip_salt),
+            ip_salt=e("DEMO_IP_SALT") or secrets.token_hex(16),
             cassette_dir=e("DEMO_CASSETTE_DIR", cls.cassette_dir),
             cases_dir=e("DEMO_CASES_DIR", cls.cases_dir),
         )

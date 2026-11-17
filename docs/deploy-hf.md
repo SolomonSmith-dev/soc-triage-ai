@@ -8,7 +8,7 @@ How it works: the Space repo holds two files (`Dockerfile`, `README.md`). The Do
 
 Deploying needs a Hugging Face write token. It does not belong in any file in a repo.
 
-Use `/usr/bin/grep`, `/bin/ls`, `/bin/cp -f` as written. Work under `~/Projects`, not Desktop or Downloads.
+Use `/usr/bin/grep` and `/bin/ls` as written. Work under `~/Projects`, not Desktop or Downloads.
 
 ## 0. Check main
 
@@ -31,14 +31,15 @@ Use `/usr/bin/grep`, `/bin/ls`, `/bin/cp -f` as written. Work under `~/Projects`
 
 ## 2. Push the two files
 
+Both files are taken from the pinned commit, not your working tree, so a stale local checkout cannot ship an older Dockerfile:
+
 ```bash
 cd ~/Projects
 git clone https://huggingface.co/spaces/SolomonSmith-dev/soc-triage-ai hf-soc-triage-ai
 cd hf-soc-triage-ai
-/bin/cp -f ~/Projects/soc-triage-ai/deploy/hf-space/Dockerfile .
-/bin/cp -f ~/Projects/soc-triage-ai/deploy/hf-space/README.md .
 SHA=$(git -C ~/Projects/soc-triage-ai rev-parse origin/main)
-sed -i '' "s/^ARG REPO_REF=main/ARG REPO_REF=$SHA/" Dockerfile
+git -C ~/Projects/soc-triage-ai show "$SHA:deploy/hf-space/Dockerfile" | sed "s/^ARG REPO_REF=main/ARG REPO_REF=$SHA/" > Dockerfile
+git -C ~/Projects/soc-triage-ai show "$SHA:deploy/hf-space/README.md" > README.md
 /usr/bin/grep -n '^ARG REPO_REF' Dockerfile
 /bin/ls
 ```
@@ -67,7 +68,7 @@ curl -s -o /dev/null -w '%{http_code}\n' $U/
 ```
 
 Done check:
-- `healthz` prints `{"status":"ok","demo_mode":true,"mode":"cached","recordings":{"replay":92,"refusal":7,"unservable":1}}`. While the engine loads it prints `"recordings":"loading"`; wait a minute. `replay` must equal the number of files in `tests/harness/cassettes`. The one `unservable` case is INJ-009, which has no cassette (see the model card).
+- `healthz` prints `{"status":"ok","demo_mode":true,"mode":"cached","recordings":{"replay":92,"refusal":7,"unservable":1}}`. While the engine loads it prints `"recordings":"loading"`; wait a minute. `replay` must equal the number of files in `tests/harness/cassettes`. The one `unservable` case is INJ-009, which has no cassette (see the model card). If it prints `"status":"error"` and `"recordings":"failed"`, the engine did not load: Logs, Container, find `event=engine_load_failed` for the error type. It retries every minute.
 - `/` prints `200`.
 
 A recorded alert replays the model step. Fetch it from `/samples` so the text matches byte for byte:
@@ -101,7 +102,11 @@ Done check: the body has `"status":"not_recorded"` and a `retrieval` list of the
 
 ## 5. Verify the guards
 
-1. Per-IP limit: run the triage call from step 4 six times within a minute. Done check: the sixth prints `rate_limited`.
+1. Per-IP limit: wait a minute after step 4, then send the recorded alert six times:
+   ```bash
+   sleep 60; for i in 1 2 3 4 5 6; do curl -s -o /dev/null -w '%{http_code}\n' -X POST $U/triage -H 'content-type: application/json' --data @t4.json; done
+   ```
+   Done check: five `200` lines, then `429`.
 2. No alert text in logs: POST an alert containing the word `zebracanary`, then open Space, Logs, Container, and use the browser's find for `zebracanary`. Done check: 0 matches.
 
 ## 6. Live mode (optional, costs money)
@@ -128,9 +133,13 @@ python -m tests.harness.report
 
 Done check: the run ends with `wrote .../baseline.json` and prints a live spend line under 5 USD. Commit the cassettes, merge, and redeploy so the Space replays the new recordings.
 
+## 8. Link the demo from the README
+
+Only after steps 4 and 5 pass. In `README.md`, replace the `**Public demo:**` paragraph with a link to the Space URL, open a PR and merge it once CI is green. The Space does not rebuild for a README change. Done check: `/usr/bin/grep -c 'solomonsmith-dev-soc-triage-ai.hf.space' README.md` prints `1` or more on `main`.
+
 ## Operating notes
 
-- Redeploy: set `ARG REPO_REF` in the Space's Dockerfile to the new `main` hash and push. The Space rebuilds from that commit.
+- Redeploy: repeat step 2 with the new `main` hash, which also picks up any change to the Dockerfile or the Space README, then commit and push. The Space rebuilds from that commit.
 - Free Spaces sleep after about 48 hours without traffic. The first visit wakes the container in roughly a minute, then the startup recording check takes a few seconds more.
 - Cached mode matches recordings on the exact prompt, which includes the exact alert text. An edited alert still gets live extraction, retrieval and the refusal guardrail; if retrieval finds context, the answer is `404 not_recorded` instead of a triage.
 - If cassettes go stale, CI fails on `harness-replay`, and a Space built from that commit shows `replay` below the cassette count in `/healthz`.

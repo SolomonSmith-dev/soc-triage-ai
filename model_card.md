@@ -149,10 +149,11 @@ INJ-009 has no cassette because the recorder at the time failed on an empty repl
 
 ### Stage 5 changes after the recorded run
 
-Both are safety-contract changes (stage 5) and were made on 2026-10-09 in response to the findings above. The prompt is unchanged, so the recorded cassettes still replay.
+All three are safety-contract changes (stage 5). The first two were made on 2026-10-09 in response to the findings above, the third on 2026-11-17. The prompt is unchanged, so the recorded cassettes still replay.
 
 1. **Fail toward review.** When retrieval found relevant context but the model call or its output failed (malformed JSON, schema failure, empty reply, API error), the system now returns severity `medium`, confidence `low`, `escalate: true` and a manual-review action, instead of `informational` and `escalate: false`. The retrieval guardrail, where nothing relevant was found, is unchanged and still answers `informational`. Medium is a floor chosen because the system cannot rule the alert out; it is not a model judgment.
 2. **Technique grounding.** Technique IDs the corpus does not contain are dropped. A parent ID in the corpus grounds its sub-techniques. If a non-informational answer is left with no technique, confidence is capped at `low`; severity and escalation are never changed. A first version required the ID to appear in the four retrieved chunks. Replay showed it would have failed 19 cases that passed in the recorded run, because the chunk carrying an ID is often not retrieved, so the check was widened to the whole corpus. Per-chunk grounding is a retrieval-quality question, not a stage 5 one.
+3. **Action list types.** `recommended_actions` must be a list of strings, as the case contract requires. Stage 5 checked only that it was a list, so a reply with an object or null item produced an envelope that fails the contract (the demo answered HTTP 500). Such a reply now fails toward review, as in item 1. None of the 92 recorded replies has a non-string action, so replay outcomes are unchanged.
 
 Replaying the recorded cassettes through these changes in CI showed no case that passed before failing now, and one more standard pass (PHISH-002, from the label review). The numbers in the tables above are from the recorded run and are not yet rescored; `python -m tests.harness.test_harness --rescore` regenerates them offline, after INJ-009 is re-recorded.
 

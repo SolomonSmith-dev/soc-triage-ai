@@ -215,6 +215,10 @@ class SOCTriage:
         valid_confidence = {"high", "medium", "low"}
         if parsed["confidence"] not in valid_confidence:
             raise ValueError(f"Invalid confidence: {parsed['confidence']}")
+        # The contract types this list[str]. Technique items are filtered in _ground_techniques;
+        # an action list with other items fails here so it takes the fail-toward-review path.
+        if not all(isinstance(a, str) for a in parsed["recommended_actions"]):
+            raise ValueError("Field recommended_actions must be a list of strings")
 
     def _ground_techniques(self, parsed: Dict, context: str) -> Dict:
         """Stage 5 grounding. Keep only technique IDs that exist in the knowledge base.
