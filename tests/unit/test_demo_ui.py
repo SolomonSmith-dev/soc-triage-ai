@@ -180,3 +180,15 @@ def test_live_mode_shows_one_budget_figure_after_a_run(page):
     assert len(budget) == 1 and api.budget_calls >= 2
     assert "replayed" not in texts(at, "caption")
     assert api.posted[-1] == {"alert": T4}
+
+
+
+def test_model_text_is_shown_without_markdown(page):
+    # Streamlit's Markdown would autolink URLs even in escaped text, and an injected alert could add an image
+    text = "Block http://198.51.100.9/x.sh, mail phish@evil.example, see www.example.com ![p](https://a.example/t.png)"
+    body = envelope(T4)
+    body["triage"].update(summary=text, recommended_actions=[text], reasoning=text)
+    at = page(FakeAPI(triage=(200, body, REPLAY)))
+    run_triage(at, T4)
+    assert [e.value for e in at.text] == [text, "1. " + text, text]
+    assert "198.51.100.9" not in texts(at, "markdown") + texts(at, "caption")

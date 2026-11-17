@@ -6,8 +6,8 @@ ZeroGPU hardware. This module serves the same API as the Docker image (POST /tri
 the visitor's X-Forwarded-For, so the page and direct API calls pass the same guards and the same
 logging rules. No visitor action uses a GPU: the embedding model runs on the CPU (SOC_EMBED_DEVICE=cpu),
 where the cassettes were checked. ZeroGPU still stops a Space that sends no startup report, and `spaces` sends
-one only when a @spaces.GPU function exists: zerogpu_handler is that function, a no-op behind a hidden control,
-and send_zerogpu_startup_report covers the `spaces` version that only reports from demo.launch().
+one only when a @spaces.GPU function exists: zerogpu_handler is that function, a no-op no page event calls, and
+send_zerogpu_startup_report covers the `spaces` version that only reports from demo.launch().
 """
 from __future__ import annotations
 
@@ -29,8 +29,8 @@ from starlette.routing import Mount
 from soc_demo.api import _where, create_app
 from soc_demo.guard import DemoConfig, IPRateLimiter, client_ip, ip_tag
 from soc_demo.present import (
-    CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, download_name,
-    is_known_miss, md_code, md_literal, option_label,
+    CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, corpus_md,
+    download_name, is_known_miss, md_code, md_literal, option_label,
 )
 
 try:  # ZeroGPU's package. Absent in local runs and CI's unit job, where nothing needs it.
@@ -98,11 +98,17 @@ def _zerogpu_noop() -> None:
     return None
 
 
-# ZeroGPU checks at startup that a Gradio event handler carries @spaces.GPU and stops the Space if none does. The
-# demo needs no GPU, so this decorated no-op is wired to a hidden control the page never shows. A direct call
-# through Gradio's queue costs the caller one second of their own GPU quota and does nothing else. Outside ZeroGPU
-# the decorator returns the function unchanged.
+# ZeroGPU stops a Space that sends no startup report, and spaces 0.51.3 sends it only once some function carries
+# @spaces.GPU. The demo needs no GPU, so this no-op is decorated and wired to nothing: a page event that called it
+# would wait up to 60 s for a GPU while ZeroGPU queues, holding a slot of the queue every visitor shares. Outside
+# ZeroGPU the decorator returns the function unchanged.
 zerogpu_handler = spaces.GPU(duration=1)(_zerogpu_noop) if spaces is not None else _zerogpu_noop
+
+
+def gpu_functions() -> int:
+    """How many functions carry @spaces.GPU: 1 on ZeroGPU (zerogpu_handler), 0 elsewhere."""
+    cache = getattr(getattr(getattr(spaces, "zero", None), "decorator", None), "decorated_cache", {})
+    return len({id(f) for f in cache.values()})
 
 
 def send_zerogpu_startup_report(app: FastAPI) -> bool:
@@ -157,6 +163,8 @@ def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple
         # invalid_request: the page sends only non-empty text, so the API could not read it (a lone surrogate)
         msg = {"not_recorded": NOT_RECORDED, "invalid_request": UNREADABLE}.get(body.get("status")) or (
             body.get("message") or f"Request failed with status {status}.")
+        if obs := observables_md(body.get("observables") or {}):  # not_recorded: stage 1 ran live
+            msg += "\n\n" + obs.rstrip("\n")
         chunks = (body.get("retrieval") or {}).get("chunks") or []
         if chunks:
             msg += "\n\n**Retrieval ran live on this alert:** " + ", ".join(
@@ -190,11 +198,8 @@ def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple
     evidence = [f"{len(ev['chunks_retrieved'])} chunks, average score {ev['avg_retrieval_score']}", ""]
     for ch in ev["chunks_retrieved"]:
         # each line of the chunk quoted, so its title stays a short heading over its bullets
-        quoted = ch["text"][:400].splitlines()
-        if quoted and quoted[-1].strip() in {"-", "*", "+"}:  # the cut can leave a bare list marker
-            quoted = quoted[:-1]
         evidence += [f"- `{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}",
-                     *("  > " + line for line in quoted)]
+                     *("  > " + line for line in corpus_md(ch["text"][:400]).splitlines())]
     return "\n".join(lines), "\n".join(evidence), download_name(body, replayed)
 
 
@@ -302,8 +307,6 @@ def build_ui(api_app: FastAPI) -> gr.Blocks:
         load_selected.click(pick, inputs=chooser, outputs=alert, api_visibility="private")
         save_json.click(None, inputs=case_json, outputs=None, js=SAVE_JSON_JS)  # browser only, no server call
         run_button.click(run, inputs=alert, outputs=[result, evidence, case_json], api_name="run_triage")
-        gpu_check = gr.Button("ZeroGPU startup check", visible=False)  # see zerogpu_handler
-        gpu_check.click(zerogpu_handler, inputs=None, outputs=None, api_visibility="private")
     ui.queue(default_concurrency_limit=8, max_size=64)
     return ui
 
@@ -325,15 +328,18 @@ class PageEventLimit:
         allowed, retry = self.limiter.check(ip)
         if not allowed:
             logger.info("event=page_rate_limited status=429 client=%s retry_after=%d", ip_tag(ip, self.salt), retry)
-            await JSONResponse({"status": "rate_limited", "message": f"Too many page requests from your address. "
-                                f"Try again in {retry} seconds."}, status_code=429,
+            # Gradio's page shows a refused event's "detail"; without it the toast says only "An error occurred". A
+            # refused page load is not retried, so the text says to reload.
+            msg = f"Too many page requests from your address. Reload the page in {retry} seconds."
+            await JSONResponse({"status": "rate_limited", "detail": msg, "message": msg}, status_code=429,
                                headers={"Retry-After": str(retry)})(scope, receive, send)
             return
         await self.app(scope, receive, send)
 
 
 class PageHeaders:
-    """Adds the Content-Security-Policy to every response. Plain ASGI, so streaming responses pass through."""
+    """Adds the Content-Security-Policy to every response, and closes Gradio's /gradio_api/file=<URL> route, which
+    fetches any public URL for anyone. The page shows no files. Plain ASGI, so streaming responses pass through."""
 
     def __init__(self, app):
         self.app = app
@@ -341,6 +347,10 @@ class PageHeaders:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
+            return
+        if scope["path"].lower().startswith(("/gradio_api/file=http:", "/gradio_api/file=https:")):
+            await JSONResponse({"detail": "Not Found"}, status_code=404,
+                               headers={"content-security-policy": CSP})(scope, receive, send)
             return
 
         async def with_csp(message):
@@ -371,9 +381,8 @@ def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm
     page = next(r.app for r in app.routes if isinstance(r, Mount) and isinstance(r.app, FastAPI))
     page.add_exception_handler(RequestValidationError, _invalid_page_request)
     _quiet_gradio_tracebacks()
-    # 1 on ZeroGPU, where the decorator marks the handler; ZeroGPU's startup check needs it there
-    logger.info("event=page_built gpu_handlers=%d",
-                sum(hasattr(f.fn, "zerogpu") for f in page.get_blocks().fns.values()))
+    # 1 on ZeroGPU, where spaces records zerogpu_handler; its startup report needs one
+    logger.info("event=page_built gpu_functions=%d", gpu_functions())
     app.add_middleware(PageEventLimit, limiter=IPRateLimiter(PAGE_EVENTS_PER_MINUTE, PAGE_EVENTS_PER_DAY),
                        trusted_hops=cfg.trusted_proxy_hops, salt=cfg.ip_salt)
     app.add_middleware(PageHeaders)  # outermost: every answer gets the CSP, a refusal from the limits included
@@ -383,11 +392,15 @@ def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm
 def main() -> None:  # the Space's app.py calls this
     os.environ.setdefault("SOC_EMBED_DEVICE", "cpu")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    # httpx logs each request URL at INFO, and callers choose some of them (a FileData URL in an event's data, the
+    # X-IP-Token spaces forwards to the device API)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     import uvicorn
     app = create_space_app()
     if send_zerogpu_startup_report(app):
         logger.info("event=zerogpu_startup_report sent_by=app")
     # lifespan="on": a failed startup (from spaces 0.52 the ZeroGPU startup report runs in it) stops the process.
     # The default, "auto", would log it at INFO and serve a page whose queue never started.
+    # ws="none": the page uses SSE, and uvicorn would log every WebSocket handshake's path and query at INFO
     uvicorn.run(app, host=os.environ.get("GRADIO_SERVER_NAME", "0.0.0.0"),
-                port=int(os.environ.get("GRADIO_SERVER_PORT", "7860")), access_log=False, lifespan="on")
+                port=int(os.environ.get("GRADIO_SERVER_PORT", "7860")), access_log=False, lifespan="on", ws="none")

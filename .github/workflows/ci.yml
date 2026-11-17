@@ -389,6 +389,16 @@ jobs:
               assert request(route, part, f"multipart/form-data; boundary={boundary}")[0] == 415, route
           # Gradio print()s this route's path parameters; the app silences that print
           assert request("/gradio_api/custom_component/canary-7c20/client/js/canary-7c20.js")[0] == 404
+          # Gradio's file route would fetch any public URL for anyone; closed
+          assert request("/gradio_api/file=https://example.com/canary-7c22.png")[0] == 404
+          # uvicorn runs with ws="none": a WebSocket handshake is plain HTTP, and its path is not logged
+          import socket
+          with socket.create_connection(("localhost", 7860), timeout=10) as sock:
+              sock.sendall(b"GET /canary-7c21?canary-7c21 HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\n"
+                           b"Connection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                           b"Sec-WebSocket-Version: 13\r\n\r\n")
+              status_line = sock.recv(64).split(b"\r\n")[0]
+          assert status_line.startswith(b"HTTP/1.1 404"), status_line
 
           # one address cannot fill the queue every visitor shares: page events are limited per address
           join = json.dumps({"data": [], "fn_index": 0, "session_hash": "ci-flood"}).encode()
@@ -400,9 +410,9 @@ jobs:
           test "$(grep -c "POST /startup-report" "$RUNNER_TEMP/device-api.log")" = 1
           grep -q "event=zerogpu_startup_report sent_by=app" "$RUNNER_TEMP/space.log"
           grep -q "event=page_event_error error=ValueError" "$RUNNER_TEMP/space.log"
-          # ZeroGPU stops a Space at startup unless a Gradio handler carries @spaces.GPU
-          grep -q "event=page_built gpu_handlers=1" "$RUNNER_TEMP/space.log"
-          if grep -E 'canary-|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback|Received inputs' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message or an error reached the logs"; exit 1; fi
+          # spaces sends the startup report only once a function carries @spaces.GPU (wired to no page event)
+          grep -q "event=page_built gpu_functions=1" "$RUNNER_TEMP/space.log"
+          if grep -E 'canary-|185\.220\.101\.45|No corpus matches for alert|Triage failed:|JSON parse failed|Exception in ASGI application|Traceback|Received inputs| httpx HTTP Request: ' "$RUNNER_TEMP/space.log"; then echo "alert text, an unredacted engine message, a request URL or an error reached the logs"; exit 1; fi
 
       - name: Newest spaces still sends exactly one startup report
         run: |
@@ -425,4 +435,4 @@ jobs:
           curl -fs localhost:7862/healthz; echo
           pip show spaces | grep -i "^version"
           test "$(grep -c "POST /startup-report" "$RUNNER_TEMP/device-api-new.log")" = 1
-          grep -q "event=page_built gpu_handlers=1" "$RUNNER_TEMP/space-new.log"
+          grep -q "event=page_built gpu_functions=1" "$RUNNER_TEMP/space-new.log"

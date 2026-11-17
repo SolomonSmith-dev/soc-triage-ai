@@ -85,6 +85,7 @@ def test_whitespace_only_edit_keeps_the_recording(tmp_path):
 def test_edited_alert_is_not_recorded_and_shows_retrieval(tmp_path):
     result, evidence, name, _ = asyncio.run(page_triage(space(tmp_path), UNRECORDED, {}))
     assert result.startswith(NOT_RECORDED) and "Retrieval ran live on this alert" in result
+    assert "Observables (regex" in result and "198.51.100.45" in result  # stage 1 ran live too
     assert name is None and evidence == ""
 
 
@@ -172,14 +173,10 @@ def test_rendered_text_cannot_become_markdown():
     for text in ("Isolate WKSTN-0042 (now).\n\n    powershell.exe -enc SQBFAFgA", "\tblock 203.0.113.9:443"):
         html = md.render(md_literal(text))
         assert "<pre>" not in html and "&amp;#" not in html, html
-    # GFM autolinks URLs, www. hosts and addresses after references decode (Streamlit); the text must not match them
-    gfm_url = re.compile(r"(https?://|www(?=\.))[-.\w]", re.I | re.A)
-    gfm_mail = re.compile(r"[-.\w+]@[-\w]+(?:\.[-\w]+)+", re.A)
-    for text in ("http://198.51.100.9/x.sh", "HTTPS://WWW.EXAMPLE.COM/x", "Www.Example.com", "a@b.example",
-                 "mailto:x@y.example"):
-        shown = html_mod.unescape(md_literal(text))
-        assert not gfm_url.search(shown) and not gfm_mail.search(shown), shown
-        assert shown.replace("\u200b", "") == text  # what a visitor reads is unchanged
+    # an analyst copies exactly what the alert or model said: nothing invisible rides along
+    for text in ("http://198.51.100.9/x.sh", "HTTPS://WWW.EXAMPLE.COM/x", "Www.Example.com", "a@b.example"):
+        assert html_mod.unescape(md_literal(text)) == text
+        assert "<a " not in md.render(md_literal(text))  # CommonMark (and Gradio's marked) link nothing here
     assert md.render(md_code("x``y`")).strip() == "<p><code>x``y`</code></p>"
     body = {"case_id": "SOC-20261117-0abc", "guardrail_triggered": False, "uncertainty_mode": "actionable",
             "triage": {"severity": "high", "escalate": True, "confidence": "high", "summary": beacon,
@@ -236,12 +233,16 @@ def test_live_mode_page_invites_pasting(tmp_path):
 
 def test_main_makes_a_failed_startup_fatal(monkeypatch):
     seen = []
+    httpx_logger = logging.getLogger("httpx")
+    monkeypatch.setattr(httpx_logger, "level", logging.NOTSET)
     monkeypatch.setattr(space_mod, "create_space_app", lambda: "app")
     monkeypatch.setattr(space_mod, "send_zerogpu_startup_report", lambda app: seen.append(("report", app)))
-    monkeypatch.setattr("uvicorn.run", lambda app, **kw: seen.append(("serve", app, kw["lifespan"])))
+    monkeypatch.setattr("uvicorn.run", lambda app, **kw: seen.append(("serve", app, kw["lifespan"], kw["ws"])))
     space_mod.main()
-    # the report goes before serving; from spaces 0.52 it runs in the lifespan, where "auto" would swallow a failure
-    assert seen == [("report", "app"), ("serve", "app", "on")]
+    # the report goes before serving; from spaces 0.52 it runs in the lifespan, where "auto" would swallow a failure.
+    # ws="none": uvicorn would log each WebSocket handshake's path and query
+    assert seen == [("report", "app"), ("serve", "app", "on", "none")]
+    assert httpx_logger.level >= logging.WARNING  # httpx logs request URLs, some chosen by callers
 
 
 class ZeroGPUMiddleware:  # the name spaces gives the middleware that sends the report for a mounted app (0.52)
@@ -290,14 +291,13 @@ def test_a_stale_page_stream_ends_cleanly_and_logs_one_line(tmp_path, caplog):
     assert "Traceback" not in caplog.text
 
 
-def test_the_zerogpu_handler_is_a_hidden_no_op(tmp_path):
-    # ZeroGPU stops a Space whose Gradio handlers carry no @spaces.GPU; outside ZeroGPU it is the plain function
+def test_the_zerogpu_function_is_wired_to_nothing(tmp_path):
+    # spaces 0.51.3 sends ZeroGPU's startup report once any function carries @spaces.GPU. A page event calling it
+    # would wait for a GPU while ZeroGPU queues, holding a slot of the shared queue, so no event calls it
     blocks = next(r.app for r in space(tmp_path).routes if isinstance(r, Mount)).get_blocks()
-    gpu = [f for f in blocks.fns.values() if f.fn is space_mod.zerogpu_handler]
-    assert len(gpu) == 1 and not gpu[0].inputs and not gpu[0].outputs and gpu[0].api_visibility == "private"
-    button = blocks.blocks[gpu[0].targets[0][0]]
-    assert isinstance(button, gr.Button) and button.visible is False
+    assert not [f for f in blocks.fns.values() if f.fn is space_mod.zerogpu_handler or hasattr(f.fn, "zerogpu")]
     assert space_mod.zerogpu_handler() is None
+    assert space_mod.gpu_functions() == 0  # outside ZeroGPU the decorator returns the plain function
 
 
 
@@ -305,12 +305,15 @@ def test_page_events_are_limited_per_address(tmp_path, caplog):
     caplog.set_level(logging.INFO)
     join = b'{"data": [], "fn_index": 0, "session_hash": "flood"}'
     with TestClient(space(tmp_path)) as c:
-        codes = [c.post("/gradio_api/queue/join", content=join,
-                        headers={"content-type": "application/json", "X-Forwarded-For": "198.51.100.7"}).status_code
-                 for _ in range(space_mod.PAGE_EVENTS_PER_MINUTE + 1)]
+        rs = [c.post("/gradio_api/queue/join", content=join,
+                     headers={"content-type": "application/json", "X-Forwarded-For": "198.51.100.7"})
+              for _ in range(space_mod.PAGE_EVENTS_PER_MINUTE + 1)]
         other = c.post("/gradio_api/queue/join", content=join,
                        headers={"content-type": "application/json", "X-Forwarded-For": "198.51.100.8"})
+    codes = [r.status_code for r in rs]
     assert set(codes[:-1]) == {200} and codes[-1] == 429 and other.status_code == 200
+    # Gradio's page shows a refused event's "detail"
+    assert rs[-1].json()["detail"].startswith("Too many page requests from your address. Reload the page in")
     assert "event=page_rate_limited status=429" in caplog.text and "198.51.100.7" not in caplog.text
 
 
@@ -328,9 +331,13 @@ def test_evidence_keeps_a_chunk_title_short():
                        "recommended_actions": ["a"], "mitre_techniques": [], "reasoning": "r"},
             "evidence": {"avg_retrieval_score": 0.5, "chunks_retrieved": [
                 {"source": "ransomware_indicators.md", "score": 0.5, "cited": True,
-                 "text": "## Encryption Phase Indicators\n- mass renames\n- shadow copy deletion\n-"}]}}
+                 "text": "## Encryption Phase Indicators\n- mass renames\n- shadow copy deletion\n-"},
+                {"source": "mitre_credential_access_lateral.md", "score": 0.4, "cited": False,
+                 "text": "dropped binaries in C:\\Windows\\Temp or \\\\target\\C$\\. via admin shares (C$, ADMIN$)"}]}}
     html = markdown_it.MarkdownIt("commonmark").render(render(200, body, {}, [])[1])
-    assert "<h2>Encryption Phase Indicators</h2>" in html and html.count("<li>") == 3, html  # entry + 2 bullets
+    assert "<h2>Encryption Phase Indicators</h2>" in html and html.count("<li>") == 4, html  # 2 entries + 2 bullets
+    # a UNC path and an admin share keep their backslashes and dollar signs
+    assert "C:\\Windows\\Temp or \\\\target\\C$\\." in html and "(C$, ADMIN$)" in html, html
 
 
 def test_case_json_downloads_under_its_provenance_name(tmp_path):
@@ -340,3 +347,12 @@ def test_case_json_downloads_under_its_provenance_name(tmp_path):
     assert "download" not in code.buttons and code.elem_id == "case-json"
     save = [f for f in blocks.fns.values() if f.fn is None and f.js]
     assert len(save) == 1 and [b._id for b in save[0].inputs] == [code._id] and "a.download" in save[0].js
+
+
+
+def test_the_file_route_fetches_no_urls(tmp_path):
+    # Gradio's /gradio_api/file=<URL> fetches any public URL for anyone; the page shows no files
+    with TestClient(space(tmp_path)) as c:
+        for path in ("/gradio_api/file=https://example.com/x.png", "/gradio_api/file=HTTP://example.com/x"):
+            r = c.get(path)
+            assert r.status_code == 404 and "img-src 'self'" in r.headers["content-security-policy"], path

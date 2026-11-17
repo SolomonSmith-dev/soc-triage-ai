@@ -301,22 +301,24 @@ def create_app(config: DemoConfig | None = None, engine_factory=None, clock=time
                 client.begin()
             elif client:
                 client.take_request_tokens()
+            obs = extract_observables(body.alert)  # stage 1, before any model call; not_recorded answers carry it
             result, hits, guard = engine.triage_with_context(body.alert)
             rec, tokens = None, 0
             if cached:
                 called, rec = client.outcome()
                 if called and rec is None:  # the model step was reached and nothing recorded answers it
-                    return None, hits, guard, 0, None
+                    return None, hits, guard, 0, None, obs
             elif client:
                 tokens = client.take_request_tokens()
-            pkg = build_case_package(alert_raw=body.alert, observables=extract_observables(body.alert),
-                                     triage_result=result, retrieval_hits=hits, guardrail_triggered=guard)
-            return pkg, hits, guard, tokens, rec
+            pkg = build_case_package(alert_raw=body.alert, observables=obs, triage_result=result,
+                                     retrieval_hits=hits, guardrail_triggered=guard)
+            return pkg, hits, guard, tokens, rec, obs
 
-        pkg, hits, guard, tokens, rec = await asyncio.to_thread(run)
+        pkg, hits, guard, tokens, rec, obs = await asyncio.to_thread(run)
         if pkg is None:
             log_event("not_recorded", 404, alert_chars=n, chunks=len(hits), client=tag)
-            return refuse(404, "not_recorded", NOT_RECORDED_MESSAGE, retrieval={
+            # an error body, not the case contract: what ran live on this alert, so the caller sees stages 1 and 2
+            return refuse(404, "not_recorded", NOT_RECORDED_MESSAGE, observables=obs, retrieval={
                 "avg_score": round(sum(s for _, s in hits) / len(hits), 3) if hits else 0.0,
                 "chunks": [{"source": ch["source"], "score": round(s, 3)} for ch, s in hits],
             })
