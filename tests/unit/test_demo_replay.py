@@ -123,6 +123,7 @@ def test_unrecorded_alert_is_not_answered(tmp_path):
     body = r.json()
     assert body["status"] == "not_recorded" and "/samples" in body["message"]
     assert body["retrieval"] == {"avg_score": 0.52, "chunks": [{"source": "log_analysis_linux.md", "score": 0.52}]}
+    assert body["observables"]["ipv4"] == ["198.51.100.45"]  # stage 1 ran live and is shown, not just retrieval
     assert "x-demo-replay-case" not in r.headers
 
 

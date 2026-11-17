@@ -59,10 +59,22 @@ _SURROGATE = re.compile("[\ud800-\udfff]")
 
 
 def md_literal(text: str) -> str:
-    """Text that Markdown shows as itself. ASCII punctuation becomes a numeric character reference, which renders as
-    the character but never as syntax, so alert or model text cannot open a link, an image, an HTML tag or emphasis.
-    Lone surrogates become U+FFFD so the page can always encode the result."""
-    return "".join(f"&#{ord(c)};" if c in string.punctuation else c for c in _SURROGATE.sub("\ufffd", text))
+    """Text that Markdown shows as itself, on one line. ASCII punctuation becomes a numeric character reference, which
+    renders as the character but never as syntax, so alert or model text cannot open a link, an image, an HTML tag or
+    emphasis on the Gradio page. Whitespace runs collapse to one space: an indented line would be a code block, where
+    references show raw. Lone surrogates become U+FFFD so the page can always encode the result. Streamlit's Markdown
+    autolinks URLs even in escaped text, so that page shows model text with st.text instead."""
+    text = " ".join(_SURROGATE.sub("\ufffd", text).split())
+    return "".join(f"&#{ord(c)};" if c in string.punctuation else c for c in text)
+
+
+def corpus_md(text: str) -> str:
+    """Corpus text for a Markdown quote: its own Markdown stays (headings, bullets), but a backslash or a dollar sign
+    is shown as itself (a UNC path, an admin share like C$), and a cut that ends on a bare list marker loses it."""
+    lines = text.splitlines()
+    if lines and lines[-1].strip() in {"-", "*", "+"}:
+        lines = lines[:-1]
+    return "\n".join(lines).replace("\\", "\\\\").replace("$", "\\$")
 
 
 def md_code(text: str) -> str:

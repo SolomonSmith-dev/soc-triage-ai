@@ -6,8 +6,8 @@ import streamlit as st
 
 from soc_demo.guard import DemoConfig
 from soc_demo.present import (
-    CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, download_name,
-    is_known_miss, md_code, md_literal, option_label,
+    CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, corpus_md,
+    download_name, is_known_miss, md_code, md_literal, option_label,
 )
 from triage_engine.extractors import extract_observables
 
@@ -129,16 +129,19 @@ if st.button("Run triage", type="primary", disabled=not alert.strip()):
             st.warning("Guardrail triggered: the system refused to fabricate a triage. Manual analyst review required.")
             if not c["evidence"]["chunks_retrieved"]:
                 st.caption("No model call was made: no corpus chunk reached the similarity threshold.")
-        # model text is shown as text, so an injected alert cannot get Markdown (a remote image) into the page
-        st.markdown(md_literal(t["summary"]))
-        st.markdown("**Recommended actions**\n" +
-                    "\n".join(f"{i}. {md_literal(x)}" for i, x in enumerate(t["recommended_actions"], 1)))
+        # model text goes through st.text, never Markdown: an injected alert cannot get an image or a link into the
+        # page, and Streamlit's Markdown would autolink URLs even in escaped text
+        st.text(t["summary"])
+        st.markdown("**Recommended actions**")
+        for i, x in enumerate(t["recommended_actions"], 1):
+            st.text(f"{i}. {x}")
         st.markdown("**MITRE ATT&CK:** " + (", ".join(map(md_literal, t["mitre_techniques"])) or "none"))
-        st.markdown("**Reasoning:** " + md_literal(t["reasoning"]))
+        st.markdown("**Reasoning:**")
+        st.text(t["reasoning"])
         with st.expander(f"Evidence ({len(c['evidence']['chunks_retrieved'])} chunks, avg score {c['evidence']['avg_retrieval_score']})"):
             for ch in c["evidence"]["chunks_retrieved"]:
                 st.markdown(f"`{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}")
-                st.caption(ch["text"][:400])
+                st.caption(corpus_md(ch["text"][:400]))
         st.download_button("Download case JSON", r.text, file_name=download_name(c, replayed), mime="application/json")
     else:
         body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
