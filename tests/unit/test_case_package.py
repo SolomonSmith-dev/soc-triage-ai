@@ -94,3 +94,17 @@ def test_uncertainty_needs_more_context_medium_conf_low_score():
 def test_uncertainty_priority_out_of_scope_beats_insufficient():
     t = _triage_stub(severity="informational", confidence="low")
     assert derive_uncertainty_mode(t, 0.10, True) == "out_of_scope"
+
+
+def test_triage_carries_only_contract_fields():
+    """The model sometimes adds keys; the contract forbids them, so the envelope must drop them."""
+    from soc_contracts import CaseEnvelope, TriageResult
+    from triage_engine.case_package import TRIAGE_FIELDS
+
+    assert set(TRIAGE_FIELDS) == set(TriageResult.model_fields)
+    stub = {**_triage_stub(), "mitre_attack_mapping": "T1078 because valid accounts"}
+    obs = {k: [] for k in ("ipv4", "email", "url", "domain", "md5", "sha1", "sha256",
+                           "registry_path", "process", "filename", "hostname", "username")}
+    pkg = build_case_package("alert", obs, stub, [], False)
+    assert set(pkg["triage"]) == set(TRIAGE_FIELDS)
+    CaseEnvelope.model_validate(pkg)

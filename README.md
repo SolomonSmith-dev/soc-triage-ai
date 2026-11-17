@@ -12,10 +12,10 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 
 ## Evidence
 
-- **109 pytest tests** across four CI jobs: 91 in `tests/unit`, 3 in `packages/contracts/tests`, 3 in `tests/harness/test_replay_ci.py`, 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 94 in `tests/unit` and `packages/contracts/tests` run offline with no key.
+- **129 pytest tests** across three CI jobs: 108 in `tests/unit`, 3 in `packages/contracts/tests`, 6 in `tests/harness` (the replay gate and the demo's cached-mode gate), 12 in `apps/api/tests` (`pytest <dir> --collect-only -q`). The 111 in `tests/unit` and `packages/contracts/tests` run offline with no key.
 - **100 harness cases**, 60 standard and 40 adversarial, 7 reviewed by me and 93 drafted by Claude and pending review (`python -m tests.harness.loader --validate`).
 - **Live run 2026-10-09**, `claude-sonnet-4-5`, 76 of 100 passing, 0.59 USD spent (`tests/harness/harness_results.json`, `meta` and `results`).
-- **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): engine unit tests, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo that asserts alert text never reaches the logs.
+- **CI** ([`ci.yml`](.github/workflows/ci.yml), 5 jobs): engine unit tests, API tests against Postgres 16, harness replay gate (fails on a stale cassette or on any case that passed in `baseline.json` and does not now, and checks that every cassette replays through the public demo API), retrieval metrics with a 0.01 drift check against `retrieval_results.json`, and a Docker smoke test of the public demo in cached and live modes that asserts alert text never reaches the logs.
 - The table and badges are generated from the committed JSON by `python -m tests.harness.readme_results`; `tests/unit/test_readme.py` fails CI if they drift.
 
 <!-- RESULTS:BEGIN -->
@@ -39,7 +39,9 @@ Retrieval-grounded triage over an 11-document threat-intel corpus, with Claude h
 
 Full tables, the threshold sweep and every documented failure case are in [`model_card.md`](model_card.md) and [`tests/harness/RESULTS.md`](tests/harness/RESULTS.md). Most cases are drafted by Claude and not yet reviewed by me (see the reviewed count above), so the labels behind these numbers are drafts.
 
-**Walkthrough:** [Loom, 3 minutes](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9), the Streamlit UI triaging a ransomware alert end to end. The public Hugging Face Space is not deployed yet; the runbook is [`docs/deploy-hf.md`](docs/deploy-hf.md).
+**Live demo:** [solomonsmith-dev-soc-triage-ai.hf.space](https://solomonsmith-dev-soc-triage-ai.hf.space), in recorded mode. The model step replays the responses Claude gave in the harness run, so the Space makes no model calls and costs nothing; extraction, retrieval, the refusal guardrail and schema validation run live on every request. Pick one of the recorded alerts; an edited alert still gets retrieval and the guardrail but no model response. Runbook: [`docs/deploy-hf.md`](docs/deploy-hf.md).
+
+**Walkthrough:** [Loom, 3 minutes](https://www.loom.com/share/5ae859759c7e4036a5c73b251164e3e9), the Streamlit UI triaging a ransomware alert end to end.
 
 ## How to run
 
@@ -56,7 +58,7 @@ pip install -r requirements.txt            # streamlit for the dev console
 No API key needed (the first retrieval call downloads the `all-MiniLM-L6-v2` embedding model):
 
 ```bash
-pytest tests/unit packages/contracts/tests          # 94 offline tests
+pytest tests/unit packages/contracts/tests          # 111 offline tests
 python -m tests.harness.loader --validate            # case files and review status
 python -m tests.harness.retrieval_eval               # retrieval metrics, local embeddings
 python -m tests.harness.test_harness --replay        # replay recorded model replies
@@ -70,12 +72,12 @@ streamlit run apps/dev-console/app.py --server.fileWatcherType=none             
 python -m tests.harness.test_harness --record        # live run, writes cassettes, capped at 5 USD
 ```
 
-Public demo mode, the same code the Hugging Face Space would run (the API process needs the key):
+Public demo, the same code the Hugging Face Space runs. Run it from the repo root: the default cached mode replays the cassettes in `tests/harness/cassettes` and needs no key. Set `DEMO_MODE=live` (and `ANTHROPIC_API_KEY`) to call Claude instead:
 
 ```bash
 pip install -e "apps/demo[ui]"
 uvicorn --factory soc_demo.api:app_factory --port 8000 &
-DEMO_API_URL=http://127.0.0.1:8000 streamlit run apps/demo/soc_demo/ui.py
+DEMO_API_URL=http://127.0.0.1:8000 streamlit run apps/demo/soc_demo/ui.py --server.fileWatcherType=none
 ```
 
 `--server.fileWatcherType=none` silences harmless `ModuleNotFoundError` warnings that `sentence-transformers` triggers under Streamlit's file watcher. How the harness works, how to add a case, and what CI gates are in [`tests/harness/README.md`](tests/harness/README.md).
@@ -150,7 +152,7 @@ soc-triage-ai/
 ├── packages/contracts/                     # pydantic schema, source of truth for the API
 ├── apps/
 │   ├── api/                                # FastAPI + Postgres service
-│   ├── demo/                               # public demo: POST /triage, rate limit, daily cap
+│   ├── demo/                               # public demo: POST /triage, recorded or live, rate limited
 │   ├── dev-console/                        # Streamlit dashboard
 │   └── web/                                # Next.js UI (deferred, see roadmap)
 ├── tests/
