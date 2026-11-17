@@ -23,15 +23,15 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.datastructures import Headers
 from starlette.routing import Mount
 
 from soc_demo.api import _where, create_app
-from soc_demo.guard import DemoConfig
+from soc_demo.guard import DemoConfig, IPRateLimiter, client_ip, ip_tag
 from soc_demo.present import (
     CACHED_INTRO, EXACT_TEXT_NOTE, FEATURED, KNOWN_MISS, LIVE_INTRO, NOT_RECORDED, canonical_alert, download_name,
     is_known_miss, md_code, md_literal, option_label,
 )
-from triage_engine.extractors import extract_observables
 
 try:  # ZeroGPU's package. Absent in local runs and CI's unit job, where nothing needs it.
     import spaces
@@ -44,12 +44,28 @@ STARTING = "The demo backend is still starting. Reload the page in a minute."
 NO_RESPONSE = "The demo backend did not respond. Try again in a minute."
 PAGE_ERROR = "Internal error. The demo logs only the error type."
 UNREADABLE = "The alert contains characters the demo cannot read. Remove them and try again."
+NO_CASE = "Pick a case from the list, then Load selected."
 HEADING = {"cached": "**Recorded alerts**", "live": "**Samples**"}
 PLACEHOLDER = {"cached": "Pick a recorded alert.", "live": "Paste an alert, or pick a sample."}
 PAGE_TIMEOUT = 120  # seconds a Run waits on the API; the in-process transport applies no timeout of its own
 LOAD_TIMEOUT = 30
-# The page may load images only from the Space itself, so text it renders cannot make a visitor's browser fetch a URL.
-CSP = "img-src 'self' data: blob:"
+# The page may load images only from the Space itself and Hugging Face's avatar hosts (Gradio's Space badge shows
+# the owner's avatar when the page is opened at the hf.space URL), so text it renders cannot make a visitor's browser
+# fetch a URL elsewhere.
+CSP = ("img-src 'self' data: blob: https://huggingface.co/api/users/ https://huggingface.co/api/organizations/ "
+       "https://cdn-avatars.huggingface.co")
+# Page events per address. Gradio's queue is shared by every visitor and holds 64 events; a person uses a few a minute.
+PAGE_EVENTS_PER_MINUTE, PAGE_EVENTS_PER_DAY = 30, 2000
+# Saves the case JSON under the name in its label, which carries the replay provenance the envelope has no field for.
+# It runs in the browser only: Gradio's own download button always saves file.json.
+SAVE_JSON_JS = """(text) => {
+  const label = document.querySelector('#case-json [data-testid="block-label"]')?.textContent || '';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+  a.download = (label.match(/[(]([^()]+[.]json)[)]/) || [])[1] || 'case.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}"""
 
 
 class _GradioTraceback:
@@ -72,6 +88,10 @@ GRADIO_PRINTERS = ("gradio.queueing", "gradio.routes", "gradio.route_utils")  # 
 def _quiet_gradio_tracebacks() -> None:
     for name in GRADIO_PRINTERS:
         sys.modules[name].traceback = _GradioTraceback()
+    # gradio.routes also print()s the custom_component route's path parameters, text any visitor chooses, before it
+    # answers 404. The page uses no custom components, and the module's other prints are off here (monitoring) or
+    # carry a file path.
+    sys.modules["gradio.routes"].print = lambda *_args, **_kwargs: None
 
 
 def _zerogpu_noop() -> None:
@@ -121,17 +141,14 @@ async def _mode_and_samples(api: httpx.AsyncClient, forwarded: dict) -> tuple[st
     return mode, r.json() if r.status_code == 200 else []
 
 
-def observables_md(alert: str, max_chars: int) -> str:
-    text = alert or ""
-    if len(text) > max_chars:
-        # the API refuses these before extraction runs, so the page does not run it either: the regexes are
-        # superlinear on some crafted input, and this event runs in the API's process
-        return f"Alert is {len(text):,} characters; the demo accepts up to {max_chars:,}."
-    obs = {k: v for k, v in extract_observables(text).items() if v}
-    if not obs:
+def observables_md(observables: dict) -> str:
+    """The case's observables, from the API's answer. The page runs no extraction of its own: a per-keystroke
+    preview was a cheap, unthrottled event on the queue every visitor shares."""
+    found = {k: v for k, v in observables.items() if v}
+    if not found:
         return ""
-    return "Observables (regex, runs before any model call): " + "  ".join(
-        f"`{k}`: " + ", ".join(md_code(x) for x in v) for k, v in obs.items())
+    return "Observables (regex, ran before any model call): " + "  ".join(
+        f"`{k}`: " + ", ".join(md_code(x) for x in v) for k, v in found.items()) + "\n"
 
 
 def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple[str, str, str | None]:
@@ -157,6 +174,8 @@ def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple
                      "Extraction, retrieval and schema validation ran live on this request.\n")
         if is_known_miss({s["id"]: s for s in samples}.get(replayed), body):
             lines.append(KNOWN_MISS + "\n")
+    if obs := observables_md(body.get("observables") or {}):
+        lines.append(obs)
     if body["guardrail_triggered"]:
         lines.append("**Guardrail triggered:** the system refused to fabricate a triage. "
                      "Manual analyst review required.\n")
@@ -170,8 +189,12 @@ def render(status: int, body: dict, headers: dict, samples: list[dict]) -> tuple
               "**Reasoning:** " + md_literal(t["reasoning"])]
     evidence = [f"{len(ev['chunks_retrieved'])} chunks, average score {ev['avg_retrieval_score']}", ""]
     for ch in ev["chunks_retrieved"]:
+        # each line of the chunk quoted, so its title stays a short heading over its bullets
+        quoted = ch["text"][:400].splitlines()
+        if quoted and quoted[-1].strip() in {"-", "*", "+"}:  # the cut can leave a bare list marker
+            quoted = quoted[:-1]
         evidence += [f"- `{ch['source']}` score {ch['score']}{' (cited)' if ch['cited'] else ''}",
-                     "  > " + ch["text"][:400].replace("\n", " ")]
+                     *("  > " + line for line in quoted)]
     return "\n".join(lines), "\n".join(evidence), download_name(body, replayed)
 
 
@@ -193,7 +216,7 @@ async def page_triage(api_app: FastAPI, alert: str, forwarded: dict) -> tuple[st
     return result, evidence, name, body
 
 
-def build_ui(api_app: FastAPI, max_alert_chars: int) -> gr.Blocks:
+def build_ui(api_app: FastAPI) -> gr.Blocks:
     # Every event takes at most one input and no gr.State. Gradio prints the values a call sent when it sent too
     # few, so with one input a short call prints nothing a visitor typed. Samples and mode come from the API on
     # each event instead, in process.
@@ -221,7 +244,10 @@ def build_ui(api_app: FastAPI, max_alert_chars: int) -> gr.Blocks:
             return gr.update()
         # a raw call can send any JSON value here (the chooser takes custom values, so Gradio never echoes one)
         alert = {s["id"]: s for s in samples}.get(cid if isinstance(cid, str) else "", {}).get("alert")
-        return alert if alert is not None else gr.update()
+        if alert is None:  # text typed into the chooser and not picked from it; the notice is fixed text
+            gr.Info(NO_CASE)
+            return gr.update()
+        return alert
 
     def featured(cid: str):
         async def load(request: gr.Request):
@@ -246,7 +272,7 @@ def build_ui(api_app: FastAPI, max_alert_chars: int) -> gr.Blocks:
         # shown in the page, never written to the server's disk: the envelope carries the visitor's alert text
         return result, evidence, gr.update(value=json.dumps(body, indent=2), label=f"Case JSON ({name})", visible=True)
 
-    # delete_cache: the page takes no files, but Gradio's upload route still writes what it is sent
+    # delete_cache: a backstop. The page takes no files, and the API refuses multipart bodies before Gradio reads them
     with gr.Blocks(title="SOC Triage AI demo", analytics_enabled=False, delete_cache=(600, 600)) as ui:
         gr.Markdown("# SOC Triage AI")
         intro = gr.Markdown()
@@ -260,27 +286,50 @@ def build_ui(api_app: FastAPI, max_alert_chars: int) -> gr.Blocks:
                 note = gr.Markdown()
             with gr.Column(scale=3):
                 alert = gr.Textbox(label="Alert", lines=6, placeholder=PLACEHOLDER["cached"])
-                # latex off: alert and model text are shown as text, and KaTeX would still read $$ in it
-                observables = gr.Markdown(latex_delimiters=[])
                 run_button = gr.Button("Run triage", variant="primary")
+                # latex off: alert and model text are shown as text, and KaTeX would still read $$ in it
                 result = gr.Markdown(latex_delimiters=[])
                 with gr.Accordion("Evidence", open=False):
                     evidence = gr.Markdown(latex_delimiters=[])
+                save_json = gr.Button("Download", size="sm")
                 case_json = gr.Code(label="Case JSON", language="json", interactive=False, visible=False,
-                                    max_lines=30)
+                                    max_lines=30, buttons=["copy", save_json], elem_id="case-json")
 
         ui.load(on_load, inputs=None, outputs=[intro, heading, alert, chooser, note, *buttons],
                 api_visibility="private")
         for button, cid in zip(buttons, FEATURED):
             button.click(featured(cid), inputs=None, outputs=alert, api_visibility="private")
         load_selected.click(pick, inputs=chooser, outputs=alert, api_visibility="private")
-        alert.change(lambda text: observables_md(text, max_alert_chars), inputs=alert, outputs=observables,
-                     api_visibility="private", concurrency_limit=1)
+        save_json.click(None, inputs=case_json, outputs=None, js=SAVE_JSON_JS)  # browser only, no server call
         run_button.click(run, inputs=alert, outputs=[result, evidence, case_json], api_name="run_triage")
         gpu_check = gr.Button("ZeroGPU startup check", visible=False)  # see zerogpu_handler
         gpu_check.click(zerogpu_handler, inputs=None, outputs=None, api_visibility="private")
     ui.queue(default_concurrency_limit=8, max_size=64)
     return ui
+
+
+class PageEventLimit:
+    """Per-address limit on the page's event calls (every POST under /gradio_api/). Gradio's queue is shared by all
+    visitors and holds 64 events, so without it one client could fill the queue and every other visitor's page would
+    fail. Each Run also passes the demo API's own limits. Plain ASGI."""
+
+    def __init__(self, app, limiter: IPRateLimiter, trusted_hops: int, salt: str):
+        self.app, self.limiter, self.trusted_hops, self.salt = app, limiter, trusted_hops, salt
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["method"] != "POST" or not scope["path"].startswith("/gradio_api/"):
+            await self.app(scope, receive, send)
+            return
+        peer = scope.get("client")
+        ip = client_ip(Headers(scope=scope).get("x-forwarded-for"), peer[0] if peer else None, self.trusted_hops)
+        allowed, retry = self.limiter.check(ip)
+        if not allowed:
+            logger.info("event=page_rate_limited status=429 client=%s retry_after=%d", ip_tag(ip, self.salt), retry)
+            await JSONResponse({"status": "rate_limited", "message": f"Too many page requests from your address. "
+                                f"Try again in {retry} seconds."}, status_code=429,
+                               headers={"Retry-After": str(retry)})(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
 
 
 class PageHeaders:
@@ -316,7 +365,7 @@ def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm
     # show_error=False: an exception's text never reaches the page. run_history=False: nothing about a run is
     # recorded, not even in the visitor's browser. SSR needs a Node server; the page works without.
     # max_file_size: no component takes files. Monitoring and the MCP server stay off.
-    app = gr.mount_gradio_app(api_app, build_ui(api_app, cfg.max_alert_chars), path="/", show_error=False,
+    app = gr.mount_gradio_app(api_app, build_ui(api_app), path="/", show_error=False,
                               ssr_mode=False, run_history=False, max_file_size="1kb", enable_monitoring=False,
                               mcp_server=False)
     page = next(r.app for r in app.routes if isinstance(r, Mount) and isinstance(r.app, FastAPI))
@@ -325,7 +374,9 @@ def create_space_app(config: DemoConfig | None = None, engine_factory=None, warm
     # 1 on ZeroGPU, where the decorator marks the handler; ZeroGPU's startup check needs it there
     logger.info("event=page_built gpu_handlers=%d",
                 sum(hasattr(f.fn, "zerogpu") for f in page.get_blocks().fns.values()))
-    app.add_middleware(PageHeaders)
+    app.add_middleware(PageEventLimit, limiter=IPRateLimiter(PAGE_EVENTS_PER_MINUTE, PAGE_EVENTS_PER_DAY),
+                       trusted_hops=cfg.trusted_proxy_hops, salt=cfg.ip_salt)
+    app.add_middleware(PageHeaders)  # outermost: every answer gets the CSP, a refusal from the limits included
     return app
 
 

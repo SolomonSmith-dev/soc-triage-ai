@@ -59,8 +59,9 @@ MAX_BODY_BYTES = 256 * 1024
 
 
 class BodyLimit:
-    """Refuses request bodies over `limit` bytes before anything reads them: a declared length over the limit gets
-    a 413, and a body sent without one ends as a client disconnect once it passes the limit. Plain ASGI."""
+    """Refuses multipart bodies (415) and bodies over `limit` bytes before anything reads them: a declared length
+    over the limit gets a 413, and a body sent without one ends as a client disconnect once it passes the limit.
+    Plain ASGI."""
 
     def __init__(self, app, limit: int = MAX_BODY_BYTES):
         self.app, self.limit = app, limit
@@ -68,6 +69,13 @@ class BodyLimit:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             await self.app(scope, receive, send)
+            return
+        # Nothing here takes a multipart body. Gradio's file routes write each part to a temp file that an aborted or
+        # unexpected upload leaves behind, untracked by its cache cleanup. Every Content-Type header is checked.
+        if any(k == b"content-type" and b"multipart" in v.lower() for k, v in scope["headers"]):
+            logger.info("event=multipart_refused status=415")
+            await JSONResponse({"status": "unsupported_media_type", "message": "Multipart bodies are not accepted."},
+                               status_code=415)(scope, receive, send)
             return
         declared = dict(scope["headers"]).get(b"content-length", b"0")
         if not declared.isdigit() or int(declared) > self.limit:

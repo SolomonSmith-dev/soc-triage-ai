@@ -182,3 +182,13 @@ def test_oversized_bodies_are_refused_before_parsing(tmp_path, caplog):
         assert chunked.status_code == 400
         assert c.post("/triage", json={"alert": "short alert"}).status_code == 200
     assert CANARY not in logged(caplog)
+
+
+def test_multipart_bodies_are_refused_before_parsing(tmp_path, caplog):
+    c = app(tmp_path, lambda b: (StubEngine(result(["a"])), None))
+    with caplog.at_level(logging.DEBUG):
+        r = c.post("/triage", files={"alert": ("a.txt", CANARY.encode())})
+        assert r.status_code == 415 and r.json()["status"] == "unsupported_media_type"
+        mixed = c.post("/triage", content=b"x", headers={"content-type": "Multipart/Form-Data; boundary=x"})
+        assert mixed.status_code == 415
+    assert CANARY not in logged(caplog)

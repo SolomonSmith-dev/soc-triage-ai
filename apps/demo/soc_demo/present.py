@@ -56,13 +56,18 @@ def download_name(envelope: dict, replay_case: str | None) -> str:
 
 
 _SURROGATE = re.compile("[\ud800-\udfff]")
+# Where GFM would autolink a URL, a www. host or an e-mail address once references are decoded (Streamlit does).
+_AUTOLINK = re.compile(r"(?<=://)|(?<=www)(?=\.)|(?=@)", re.IGNORECASE)
 
 
 def md_literal(text: str) -> str:
-    """Text that Markdown shows as itself. ASCII punctuation becomes a numeric character reference, which renders as
-    the character but never as syntax, so alert or model text cannot open a link, an image, an HTML tag or emphasis.
-    Lone surrogates become U+FFFD so the page can always encode the result."""
-    return "".join(f"&#{ord(c)};" if c in string.punctuation else c for c in _SURROGATE.sub("\ufffd", text))
+    """Text that Markdown shows as itself, on one line. ASCII punctuation becomes a numeric character reference, which
+    renders as the character but never as syntax, so alert or model text cannot open a link, an image, an HTML tag or
+    emphasis. Whitespace runs collapse to one space: an indented line would be a code block, where references show
+    raw. A zero-width space at each autolink point keeps URLs, www. hosts and addresses as plain text. Lone surrogates
+    become U+FFFD so the page can always encode the result."""
+    text = _AUTOLINK.sub("\u200b", " ".join(_SURROGATE.sub("\ufffd", text).split()))
+    return "".join(f"&#{ord(c)};" if c in string.punctuation else c for c in text)
 
 
 def md_code(text: str) -> str:
