@@ -133,7 +133,7 @@ def test_injected_client_is_used_without_api_key(monkeypatch):
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd /Users/solomonsmith/Projects/soc-triage-ai && pytest tests/unit/test_client_injection.py -v`
+Run: `cd . && pytest tests/unit/test_client_injection.py -v`
 Expected: FAIL. `SOCTriage.__init__()` takes no `client` argument (TypeError), or RuntimeError about missing API key.
 
 - [ ] **Step 3: Add the optional parameter**
@@ -466,7 +466,7 @@ All seven use `provenance.drafted_by: hand-written-v1`, `reviewed_by: solomon`, 
 
 - [ ] **Step 2: Verify all seven load**
 
-Run: `cd /Users/solomonsmith/Projects/soc-triage-ai && python -m tests.harness.loader`
+Run: `cd . && python -m tests.harness.loader`
 Expected: `OK: 7 cases valid`
 
 - [ ] **Step 3: Commit**
@@ -969,7 +969,7 @@ git commit -m "feat(harness): YAML-driven CLI with live/replay modes"
 
 - [ ] **Step 1: Run the harness live to record**
 
-Run: `cd /Users/solomonsmith/Projects/soc-triage-ai && source venv/bin/activate && python -m tests.harness.test_harness`
+Run: `cd . && source venv/bin/activate && python -m tests.harness.test_harness`
 Expected: 7 cases run; summary prints `Passed: 7/7`. Cassettes appear under `tests/harness/cassettes/` for every case that reached the LLM. (T6 gibberish may make no LLM call if retrieval returns nothing; that is expected and it will have no cassette.)
 
 - [ ] **Step 2: Confirm replay is green with no API key**
