@@ -38,8 +38,7 @@ def test_sweep_covers_requested_range_and_is_monotone_in_recall():
 
 def test_committed_results_match_their_own_raw_scores():
     p = Path("tests/harness/retrieval_results.json")
-    if not p.exists():
-        pytest.skip("retrieval_results.json not committed yet")
+    assert p.is_file(), "retrieval_results.json must be committed"
     doc = json.loads(p.read_text())
     labels = labels_from_cases(load_cases())
     assert doc["metrics"] == metrics_from_raw(doc["raw"], labels)

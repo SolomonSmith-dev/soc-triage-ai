@@ -141,12 +141,7 @@ jobs:
         run: python -m tests.harness.retrieval_eval --out retrieval_report.json --print-json
 
       - name: Check committed results still match
-        run: |
-          if [ -f tests/harness/retrieval_results.json ]; then
-            python -m tests.harness.retrieval_eval --check tests/harness/retrieval_results.json
-          else
-            echo "no committed retrieval_results.json yet"
-          fi
+        run: python -m tests.harness.retrieval_eval --check tests/harness/retrieval_results.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -436,3 +431,22 @@ jobs:
           pip show spaces | grep -i "^version"
           test "$(grep -c "POST /startup-report" "$RUNNER_TEMP/device-api-new.log")" = 1
           grep -q "event=page_built gpu_functions=1" "$RUNNER_TEMP/space-new.log"
+
+  ci-gate:
+    name: ci-gate
+    needs: [unit-tests, api-tests, harness-replay, retrieval-eval, demo-image, space-app]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: All required jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results=$RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "* | *" skipped "*)
+              echo "One or more jobs failed, were cancelled, or were skipped"
+              exit 1
+              ;;
+          esac
