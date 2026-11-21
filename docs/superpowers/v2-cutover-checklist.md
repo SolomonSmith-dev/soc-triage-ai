@@ -24,7 +24,7 @@ git push origin v2-platform
 ## Run all gates locally
 
 ```bash
-cd /Users/solomonsmith/Projects/soc-triage-ai
+cd ~/Projects/soc-triage-ai
 source venv/bin/activate
 python -m pytest tests/unit -v          # expect: 34 passed (more by then)
 python -m tests.harness.test_harness     # expect: Passed 7/7
