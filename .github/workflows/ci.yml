@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
     name: Engine unit tests (extractors / case_package / evaluation)
@@ -116,6 +119,9 @@ jobs:
   retrieval-eval:
     name: Retrieval metrics (local embeddings, no API key)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
