@@ -1,0 +1,2 @@
+# Confirmed false positives (test fixtures / header values / public IDs), reviewed 2026-11-20.
+dd0391e86223ea4404990d86ed3f9534313270db:.github/workflows/ci.yml:generic-api-key:398
