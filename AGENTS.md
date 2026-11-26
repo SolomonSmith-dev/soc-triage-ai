@@ -14,8 +14,8 @@ Retrieval-grounded triage for security alerts. It extracts observables, retrieve
 ## Setup and checks
 
 - Install: `pip install -e packages/contracts -e services/triage-worker -e "apps/demo[ui,space]" pytest` (README.md, Quick start)
-- Unit tests (offline, no API key): `pytest tests/unit packages/contracts/tests` (.github/workflows/ci.yml, line 36)
-- API tests: `pytest apps/api/tests` (ci.yml, line 76)
+- Unit tests (offline, no API key): `pytest tests/unit packages/contracts/tests` (.github/workflows/ci.yml, line 39)
+- API tests: `pytest apps/api/tests` (ci.yml, line 79)
 - Harness validation and replay: `python -m tests.harness.loader --validate`, `python -m tests.harness.test_harness --replay` (README.md, Quick start)
 - Live harness run (needs `ANTHROPIC_API_KEY`, spend capped at 5 USD): `python -m tests.harness.test_harness --record`
 
