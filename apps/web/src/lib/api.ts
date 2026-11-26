@@ -32,10 +32,13 @@ async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  // Server-side calls authenticate with an API key; the API rejects keyless /cases and /triage requests.
+  const apiKey = typeof window === "undefined" ? process.env.SOC_API_KEY : undefined;
   const res = await fetch(`${getBaseUrl()}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
+      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
